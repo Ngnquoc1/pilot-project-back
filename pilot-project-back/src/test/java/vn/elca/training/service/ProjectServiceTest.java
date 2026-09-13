@@ -96,4 +96,44 @@ public class ProjectServiceTest {
         // [Verify]
         verify(projectRepository).findProjectByNameContainsIgnoreCase(keyword);
     }
+
+    @Test
+    @DisplayName("Case 4: Tạo dự án bảo trì thành công - Cũ inactive, Mới active với tên đúng chuẩn")
+    void testCreateMaintenanceProject_Success() {
+        Long oldId = 1L;
+        Project oldProject = new Project("EFV", LocalDate.now(), "ELCA");
+        oldProject.setId(oldId);
+        oldProject.setActivated(true);
+
+        when(projectRepository.findById(oldId)).thenReturn(java.util.Optional.of(oldProject));
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Project maintenanceProject = projectService.createMaintenanceProject(oldId);
+
+        // Verify old project deactivated
+        assertFalse(oldProject.isActivated(), "Dự án cũ phải bị chuyển thành inactive (activated = false)");
+
+        // Verify maintenance project attributes
+        assertNotNull(maintenanceProject, "Dự án bảo trì mới không được null");
+        int currentYear = LocalDate.now().getYear();
+        assertEquals(String.format("EFV Maint. %d", currentYear), maintenanceProject.getName(), "Tên dự án mới phải có đuôi Maint. <năm>");
+        assertTrue(maintenanceProject.isActivated(), "Dự án bảo trì mới phải ở trạng thái active (activated = true)");
+        assertEquals("ELCA", maintenanceProject.getCustomer());
+
+        // Verify repository interactions: save called twice (1 update old, 1 insert new)
+        verify(projectRepository, times(2)).save(any(Project.class));
+    }
+
+    @Test
+    @DisplayName("Case 5: Báo lỗi ProjectNotFoundException khi ID dự án cũ không tồn tại")
+    void testCreateMaintenanceProject_NotFound() {
+        Long invalidId = 999L;
+        when(projectRepository.findById(invalidId)).thenReturn(java.util.Optional.empty());
+
+        assertThrows(vn.elca.training.model.exception.ProjectNotFoundException.class, () -> {
+            projectService.createMaintenanceProject(invalidId);
+        });
+
+        verify(projectRepository, never()).save(any(Project.class));
+    }
 }

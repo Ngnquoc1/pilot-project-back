@@ -42,4 +42,9 @@ public class FirstDummyProjectServiceImpl extends AbstractDummyProjectService im
         printCurrentActiveProfiles();
         throw new UnsupportedOperationException("This is first dummy service");
     }
+
+    @Override
+    public Project createMaintenanceProject(Long oldProjectId) {
+        throw new UnsupportedOperationException("This is first dummy service");
+    }
 }

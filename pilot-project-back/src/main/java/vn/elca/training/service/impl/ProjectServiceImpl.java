@@ -9,6 +9,10 @@ import vn.elca.training.model.exception.ProjectNotFoundException;
 import vn.elca.training.repository.ProjectRepository;
 import vn.elca.training.service.ProjectService;
 
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -73,5 +77,40 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public long count() {
         return projectRepository.count();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Project createMaintenanceProject(Long oldProjectId) {
+        Project oldProject = projectRepository.findById(oldProjectId)
+                .orElseThrow(() -> new ProjectNotFoundException(oldProjectId));
+
+        // 1. Deactivate old development project
+        oldProject.setActivated(false);
+        projectRepository.save(oldProject);
+
+        // 2. Construct maintenance project name: <old project's name> + " Maint. " + <current year>
+        int currentYear = LocalDate.now().getYear();
+        String maintenanceName = String.format("%s Maint. %d", oldProject.getName(), currentYear);
+
+        // 3. Validation: If a maintenance project with this exact name already exists, abort
+        boolean alreadyExists = projectRepository.findAll().stream()
+                .anyMatch(p -> maintenanceName.equalsIgnoreCase(p.getName()));
+        if (alreadyExists) {
+            throw new IllegalStateException(String.format("Maintenance project '%s' already exists!", maintenanceName));
+        }
+
+        Project maintenanceProject = new Project(
+                maintenanceName,
+                oldProject.getFinishingDate(),
+                oldProject.getCustomer(),
+                oldProject.getGroup()
+        );
+        maintenanceProject.setActivated(true);
+        if (oldProject.getProjectMembers() != null) {
+            maintenanceProject.setProjectMembers(new HashSet<>(oldProject.getProjectMembers()));
+        }
+
+        return projectRepository.save(maintenanceProject);
     }
 }

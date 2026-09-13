@@ -20,4 +20,6 @@ public interface ProjectService {
     Project update(ProjectDto projectDto, Long id);
 
     long count();
+
+    Project createMaintenanceProject(Long oldProjectId);
 }

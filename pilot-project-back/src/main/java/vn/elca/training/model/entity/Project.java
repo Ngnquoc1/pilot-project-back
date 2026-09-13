@@ -23,6 +23,9 @@ public class Project {
     @Column
     private String customer;
 
+    @Column(columnDefinition = "boolean default true")
+    private boolean activated = true;
+
     @OneToMany(mappedBy = "project", fetch = FetchType.LAZY)
     private Set<Task> tasks = new HashSet<>();
 
@@ -119,5 +122,13 @@ public class Project {
 
     public void setProjectMembers(Set<User> projectMembers) {
         this.projectMembers = projectMembers;
+    }
+
+    public boolean isActivated() {
+        return activated;
+    }
+
+    public void setActivated(boolean activated) {
+        this.activated = activated;
     }
 }
