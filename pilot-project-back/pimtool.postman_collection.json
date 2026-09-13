@@ -1,0 +1,47 @@
+{
+	"info": {
+		"_postman_id": "776956c5-de25-41fe-97f6-43dbc582eb6c",
+		"name": "pimtool",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "main",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/main",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"main"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "project/search",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/project/search",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"project",
+						"search"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
