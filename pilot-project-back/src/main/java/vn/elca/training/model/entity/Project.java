@@ -46,6 +46,19 @@ public class Project {
         this.finishingDate = finishingDate;
     }
 
+    public Project(String name, LocalDate finishingDate, String customer) {
+        this.name = name;
+        this.finishingDate = finishingDate;
+        this.customer = customer;
+    }
+
+    public Project(String name, LocalDate finishingDate, String customer, Group group) {
+        this.name = name;
+        this.finishingDate = finishingDate;
+        this.customer = customer;
+        this.group = group;
+    }
+
     public Project(Long id, String name, LocalDate finishingDate) {
         this.id = id;
         this.name = name;
