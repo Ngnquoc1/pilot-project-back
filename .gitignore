@@ -53,3 +53,9 @@ target/
 
 # Angular
 *.spec.ts
+
+# Markdown files (chỉ cho phép track duy nhất README.md)
+**/*.md
+!**/README.md
+!README.md
+
