@@ -9,6 +9,7 @@ import vn.elca.training.model.entity.QProject;
 import vn.elca.training.model.entity.QTask;
 import vn.elca.training.model.entity.Task;
 
+import javax.persistence.EntityGraph;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.List;
@@ -20,8 +21,10 @@ import java.util.List;
 @Repository
 public class TaskRepositoryCustomImpl implements TaskRepositoryCustom {
 
-
     private final JPAQueryFactory queryFactory;
+
+    @PersistenceContext
+    private EntityManager em;
 
     @Autowired
     public TaskRepositoryCustomImpl(JPAQueryFactory queryFactory) {
@@ -34,7 +37,7 @@ public class TaskRepositoryCustomImpl implements TaskRepositoryCustom {
         QTask qTask=QTask.task;
         return queryFactory
                 .selectFrom(qProject)
-                .innerJoin(qProject.tasks, qTask)
+                .innerJoin(qProject.tasks, qTask).fetchJoin()
                 .where(qTask.name.eq(taskName))
                 .fetch();
     }
@@ -42,10 +45,25 @@ public class TaskRepositoryCustomImpl implements TaskRepositoryCustom {
     @Override
     public List<Task> listRecentTasks(int limit) {
         QTask qTask=QTask.task;
+        QProject qProject=QProject.project;
         return queryFactory
                 .selectFrom(qTask)
                 .orderBy(qTask.id.desc())
+                .innerJoin(qTask.project, qProject).fetchJoin()
                 .limit(limit)
                 .fetch();
     }
+
+//    @Override
+//    public List<Task> findTop10ByOrderByIdDesc() {
+//        EntityGraph<Task> graph = em.createEntityGraph(Task.class);
+//        graph.addAttributeNodes("project");
+//        QTask qTask=QTask.task;
+//        return queryFactory
+//                .selectFrom(qTask)
+//                .setHint("javax.persistence.fetchgraph",graph)
+//                .orderBy(qTask.id.desc())
+//                .limit(10)
+//                .fetch();
+//    }
 }

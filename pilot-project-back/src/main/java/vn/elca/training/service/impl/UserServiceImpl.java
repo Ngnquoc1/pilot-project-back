@@ -37,16 +37,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findOne(String usename) {
-        return userRepository.findUserByUsername(usename);
+    public User findOne(String username) {
+        return userRepository.findUserByUsername(username);
     }
 
     @Override
     public User addTasksToUser(List<Long> taskIds, String username) {
         List<Task> tasks = taskRepository.findAllById(taskIds);
         User user = findOne(username);
-        user.setTasks(tasks);
-
+        for (Task task : tasks) {
+            user.addTask(task);
+        }
         return user;
     }
 

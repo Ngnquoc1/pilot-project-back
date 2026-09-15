@@ -39,4 +39,9 @@ public class ProjectController extends AbstractApplicationController {
     public  ProjectDto update(@RequestBody ProjectDto projectDto, @PathVariable Long id) {
         return mapper.projectToProjectDto(projectService.update(projectDto, id));
     }
+
+    @PostMapping("/{id}/maintenance")
+    public ProjectDto createMaintenanceProject(@PathVariable Long id) {
+        return mapper.projectToProjectDto(projectService.createMaintenanceProject(id));
+    }
 }

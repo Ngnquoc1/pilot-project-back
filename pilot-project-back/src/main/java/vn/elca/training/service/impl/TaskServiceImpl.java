@@ -43,7 +43,7 @@ import java.util.UUID;
  *
  */
 @Service
-@Transactional
+@Transactional(rollbackFor = DeadlineAfterFinishingDateException.class)
 public class TaskServiceImpl implements TaskService {
 	private Log logger = LogFactory.getLog(getClass());
 	private static final int FETCH_LIMIT = 10;
@@ -73,6 +73,7 @@ public class TaskServiceImpl implements TaskService {
 	public List<String> listProjectNameOfRecentTasks() {
 		List<String> projectNames = new ArrayList<>(FETCH_LIMIT);
 		List<Task> tasks = taskRepository.listRecentTasks(FETCH_LIMIT);
+//		List<Task> tasks = taskRepository.findTop10ByOrderByIdDesc();
 		for (Task task : tasks) {
 			projectNames.add(task.getProject().getName());
 		}
@@ -81,11 +82,7 @@ public class TaskServiceImpl implements TaskService {
 
 	@Override
 	public List<Task> listTasksById(List<Long> ids) {
-		List<Task> tasks = new ArrayList<>(ids.size());
-		for (Long id : ids) {
-			tasks.add(getTaskById(id));
-		}
-		return tasks;
+		return taskRepository.findAllById(ids);
 	}
 
 	@Override

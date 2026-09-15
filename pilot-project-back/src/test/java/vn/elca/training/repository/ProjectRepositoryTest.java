@@ -83,7 +83,7 @@ public class ProjectRepositoryTest {
     @Test
     public void testSaveMultipleProjectsTree() {
         // 1. Create Users
-        User qmv = userRepository.save(new User("QMV", "Quoc Manh"));
+        User qmv = userRepository.save(new User("QMV"));
         User htv = userRepository.save(new User("HTV"));
         User tqp = userRepository.save(new User("TQP"));
         User hnh = userRepository.save(new User("HNH"));

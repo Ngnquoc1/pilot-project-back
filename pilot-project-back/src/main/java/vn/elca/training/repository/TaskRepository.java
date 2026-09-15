@@ -1,10 +1,13 @@
 package vn.elca.training.repository;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.stereotype.Repository;
 import vn.elca.training.model.entity.Task;
 import vn.elca.training.repository.custom.TaskRepositoryCustom;
+
+import java.util.List;
 
 /**
  * @author vlp
@@ -12,5 +15,6 @@ import vn.elca.training.repository.custom.TaskRepositoryCustom;
  */
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long>, QuerydslPredicateExecutor<Task>, TaskRepositoryCustom {
-
+//    @EntityGraph(attributePaths = {"project"})
+//    List<Task> findTop10ByOrderByIdDesc();
 }

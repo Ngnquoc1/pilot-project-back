@@ -26,21 +26,21 @@ import static org.mockito.Mockito.*;
 public class ProjectServiceTest {
 
     @Mock
-    private ProjectRepository projectRepository; // 1. Giả lập Repository (không kết nối DB)
+    private ProjectRepository projectRepository;
 
     @InjectMocks
-    private ProjectServiceImpl projectService; // 2. Tiêm mock vào class cần test
+    private ProjectServiceImpl projectService;
 
     @Test
     @DisplayName("Case 1: Tìm thấy danh sách dự án khi từ khóa khớp")
     void testFindByName_WhenKeywordMatches_ShouldReturnProjectList() {
-        // [Given]: Chuẩn bị dữ liệu giả lập
+
         String keyword = "EFV";
         Project project1 = new Project("EFV Core", LocalDate.now());
         Project project2 = new Project("EFV Integration", LocalDate.now());
         List<Project> mockList = List.of(project1, project2);
 
-        // Dạy cho Mock Repository: Khi được gọi với từ khóa "EFV" thì trả về mockList
+        // Config Mock Repository: Khi được gọi với từ khóa "EFV" thì trả về mockList
         when(projectRepository.findProjectByNameContainsIgnoreCase("EFV"))
                 .thenReturn(mockList);
 

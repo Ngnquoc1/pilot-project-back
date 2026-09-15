@@ -25,6 +25,7 @@ public class ApplicationMapper {
         dto.setName(entity.getName());
         dto.setFinishingDate(entity.getFinishingDate());
         dto.setCustomer(entity.getCustomer());
+        dto.setActivated(entity.isActivated());
 
         return dto;
     }

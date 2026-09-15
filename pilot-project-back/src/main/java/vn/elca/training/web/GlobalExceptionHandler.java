@@ -64,6 +64,20 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 3.1. Illegal State (e.g. duplicate maintenance project in transaction)_HTTP 400 Bad Request
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalState(IllegalStateException ex) {
+        logger.warn("Illegal state in request: " + ex.getMessage());
+        ErrorResponseDto error = new ErrorResponseDto(
+                HttpStatus.BAD_REQUEST.value(),
+                "ILLEGAL_STATE",
+                ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
      * 4. Bean Validation @Valid (HTTP 400 Bad Request)
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)

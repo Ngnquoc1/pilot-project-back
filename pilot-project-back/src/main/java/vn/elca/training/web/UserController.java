@@ -29,8 +29,9 @@ public class UserController extends AbstractApplicationController {
     UserService userService;
 
     @GetMapping("/id/{id}")
-    public User findOne(@PathVariable Long id) {
-        return userService.findOne(id);
+    public UserDto findOne(@PathVariable Long id) {
+        User user= userService.findOne(id);
+        return mapper.userToUserDto(user);
     }
 
     @GetMapping("/{username}")

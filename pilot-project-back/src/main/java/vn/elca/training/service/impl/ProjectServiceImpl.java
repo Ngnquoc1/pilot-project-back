@@ -89,7 +89,7 @@ public class ProjectServiceImpl implements ProjectService {
         oldProject.setActivated(false);
         projectRepository.save(oldProject);
 
-        // 2. Construct maintenance project name: <old project's name> + " Maint. " + <current year>
+        // 2. Construct maintenance project name.
         int currentYear = LocalDate.now().getYear();
         String maintenanceName = String.format("%s Maint. %d", oldProject.getName(), currentYear);
 

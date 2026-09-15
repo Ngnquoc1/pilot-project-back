@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -72,5 +73,13 @@ public class User implements Serializable {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public void addTask(Task task) {
+        if (this.tasks == null) {
+            this.tasks = new ArrayList<>();
+        }
+        this.tasks.add(task);
+        task.setUser(this); // Tự động gán cả 2 chiều cùng lúc!
     }
 }
