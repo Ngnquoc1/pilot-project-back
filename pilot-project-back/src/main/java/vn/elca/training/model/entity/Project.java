@@ -1,79 +1,78 @@
 package vn.elca.training.model.entity;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @author vlp
+ * Project entity representing the PROJECT table in PIM Tool database.
+ *
+ * @author nnnq
  */
 @Entity
-public class Project {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@Table(name = "PROJECT")
+public class Project extends AbstractEntity {
 
-    @Column(nullable = false)
+    @Column(name = "PROJECT_NUMBER", nullable = false, unique = true)
+    private Integer projectNumber;
+
+    @Column(name = "NAME", length = 50, nullable = false)
     private String name;
 
-    @Column
-    private LocalDate finishingDate;
-
-    @Column
+    @Column(name = "CUSTOMER", length = 50, nullable = false)
     private String customer;
 
-    @Column(columnDefinition = "boolean default true")
-    private boolean activated = true;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "STATUS", length = 3, nullable = false)
+    private ProjectStatus status;
 
-    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY)
-    private Set<Task> tasks = new HashSet<>();
+    @Column(name = "START_DATE", nullable = false)
+    private LocalDate startDate;
+
+    @Column(name = "END_DATE")
+    private LocalDate endDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id")
+    @JoinColumn(name = "GROUP_ID", nullable = false)
     private Group group;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name="PROJECT_USER",
-            joinColumns=@JoinColumn(name="project_id"),
-            inverseJoinColumns =@JoinColumn(name="user_id")
+            name = "PROJECT_EMPLOYEE",
+            joinColumns = @JoinColumn(name = "PROJECT_ID"),
+            inverseJoinColumns = @JoinColumn(name = "EMPLOYEE_ID")
     )
-    private Set<User> projectMembers = new HashSet<User>();
+    private Set<Employee> members = new HashSet<>();
 
     public Project() {
     }
 
-    public Project(String name, LocalDate finishingDate) {
+    public Project(Integer projectNumber, String name, String customer, ProjectStatus status, LocalDate startDate, LocalDate endDate, Group group) {
+        this.projectNumber = projectNumber;
         this.name = name;
-        this.finishingDate = finishingDate;
-    }
-
-    public Project(String name, LocalDate finishingDate, String customer) {
-        this.name = name;
-        this.finishingDate = finishingDate;
         this.customer = customer;
-    }
-
-    public Project(String name, LocalDate finishingDate, String customer, Group group) {
-        this.name = name;
-        this.finishingDate = finishingDate;
-        this.customer = customer;
+        this.status = status;
+        this.startDate = startDate;
+        this.endDate = endDate;
         this.group = group;
     }
 
-    public Project(Long id, String name, LocalDate finishingDate) {
-        this.id = id;
-        this.name = name;
-        this.finishingDate = finishingDate;
+    public Integer getProjectNumber() {
+        return projectNumber;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
+    public void setProjectNumber(Integer projectNumber) {
+        this.projectNumber = projectNumber;
     }
 
     public String getName() {
@@ -84,14 +83,6 @@ public class Project {
         this.name = name;
     }
 
-    public LocalDate getFinishingDate() {
-        return finishingDate;
-    }
-
-    public void setFinishingDate(LocalDate finishingDate) {
-        this.finishingDate = finishingDate;
-    }
-
     public String getCustomer() {
         return customer;
     }
@@ -100,12 +91,28 @@ public class Project {
         this.customer = customer;
     }
 
-    public Set<Task> getTasks() {
-        return tasks;
+    public ProjectStatus getStatus() {
+        return status;
     }
 
-    public void setTasks(Set<Task> tasks) {
-        this.tasks = tasks;
+    public void setStatus(ProjectStatus status) {
+        this.status = status;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
     }
 
     public Group getGroup() {
@@ -116,19 +123,11 @@ public class Project {
         this.group = group;
     }
 
-    public Set<User> getProjectMembers() {
-        return projectMembers;
+    public Set<Employee> getMembers() {
+        return members;
     }
 
-    public void setProjectMembers(Set<User> projectMembers) {
-        this.projectMembers = projectMembers;
-    }
-
-    public boolean isActivated() {
-        return activated;
-    }
-
-    public void setActivated(boolean activated) {
-        this.activated = activated;
+    public void setMembers(Set<Employee> members) {
+        this.members = members;
     }
 }

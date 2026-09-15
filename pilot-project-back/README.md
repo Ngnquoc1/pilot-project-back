@@ -836,7 +836,6 @@ Trong 7 loại Propagation của Spring, **chỉ có duy nhất 2 loại** sở 
   import org.springframework.transaction.annotation.Propagation;
   import org.springframework.transaction.annotation.Transactional; // Dùng annotation của Spring Framework
 
-  import vn.elca.training.model.entity.Task;
   import vn.elca.training.model.entity.TaskAudit;
   import vn.elca.training.model.entity.TaskAudit.AuditType;
   import vn.elca.training.model.entity.TaskAudit.Status;

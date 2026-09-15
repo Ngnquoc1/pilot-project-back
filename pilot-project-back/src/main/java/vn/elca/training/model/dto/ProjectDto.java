@@ -1,17 +1,28 @@
 package vn.elca.training.model.dto;
 
+import vn.elca.training.model.entity.ProjectStatus;
+
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * @author gtn
+ * Data Transfer Object for Project.
  *
+ * @author gtn
  */
 public class ProjectDto {
     private Long id;
+    private Integer projectNumber;
     private String name;
-    private LocalDate finishingDate;
     private String customer;
-
+    private ProjectStatus status;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private Long groupId;
+    private String groupLeaderVisa;
+    private Set<String> memberVisas = new HashSet<>();
+    private Long version;
 
     public Long getId() {
         return id;
@@ -19,6 +30,14 @@ public class ProjectDto {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Integer getProjectNumber() {
+        return projectNumber;
+    }
+
+    public void setProjectNumber(Integer projectNumber) {
+        this.projectNumber = projectNumber;
     }
 
     public String getName() {
@@ -29,25 +48,67 @@ public class ProjectDto {
         this.name = name;
     }
 
-    public LocalDate getFinishingDate() {
-        return finishingDate;
+    public String getCustomer() {
+        return customer;
     }
 
-    public void setFinishingDate(LocalDate finishingDate) {
-        this.finishingDate = finishingDate;
+    public void setCustomer(String customer) {
+        this.customer = customer;
     }
 
-    public String getCustomer() { return customer; }
-
-    public void setCustomer(String customer) { this.customer = customer; }
-
-    private boolean activated;
-
-    public boolean isActivated() {
-        return activated;
+    public ProjectStatus getStatus() {
+        return status;
     }
 
-    public void setActivated(boolean activated) {
-        this.activated = activated;
+    public void setStatus(ProjectStatus status) {
+        this.status = status;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public Long getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(Long groupId) {
+        this.groupId = groupId;
+    }
+
+    public String getGroupLeaderVisa() {
+        return groupLeaderVisa;
+    }
+
+    public void setGroupLeaderVisa(String groupLeaderVisa) {
+        this.groupLeaderVisa = groupLeaderVisa;
+    }
+
+    public Set<String> getMemberVisas() {
+        return memberVisas;
+    }
+
+    public void setMemberVisas(Set<String> memberVisas) {
+        this.memberVisas = memberVisas;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

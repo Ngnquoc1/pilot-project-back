@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import vn.elca.training.model.dto.ErrorResponseDto;
 import vn.elca.training.model.exception.ApplicationUnexpectedException;
-import vn.elca.training.model.exception.DeadlineAfterFinishingDateException;
 import vn.elca.training.model.exception.ProjectNotFoundException;
 
 import java.util.HashMap;
@@ -35,19 +34,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    /**
-     * 2.Deadline After_ HTTP 400 Bad Request
-     */
-    @ExceptionHandler(DeadlineAfterFinishingDateException.class)
-    public ResponseEntity<ErrorResponseDto> handleDeadlineAfterFinishingDate(DeadlineAfterFinishingDateException ex) {
-        logger.warn("Business validation error: " + ex.getMessage());
-        ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.BAD_REQUEST.value(),
-                "DEADLINE_AFTER_FINISHING_DATE",
-                ex.getMessage()
-        );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
 
     /**
      * 3. Illegal Argument_HTTP 400 Bad Request

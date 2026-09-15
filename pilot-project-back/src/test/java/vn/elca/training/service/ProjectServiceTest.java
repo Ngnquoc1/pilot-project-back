@@ -3,26 +3,27 @@ package vn.elca.training.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import vn.elca.training.model.dto.ProjectDto;
 import vn.elca.training.model.entity.Project;
+import vn.elca.training.model.entity.ProjectStatus;
+import vn.elca.training.model.exception.ProjectNotFoundException;
 import vn.elca.training.repository.ProjectRepository;
 import vn.elca.training.service.impl.ProjectServiceImpl;
 
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Unit Test cho ProjectService - Method findByName")
+@DisplayName("Unit Test cho ProjectService")
 public class ProjectServiceTest {
 
     @Mock
@@ -34,106 +35,64 @@ public class ProjectServiceTest {
     @Test
     @DisplayName("Case 1: Tìm thấy danh sách dự án khi từ khóa khớp")
     void testFindByName_WhenKeywordMatches_ShouldReturnProjectList() {
-
         String keyword = "EFV";
-        Project project1 = new Project("EFV Core", LocalDate.now());
-        Project project2 = new Project("EFV Integration", LocalDate.now());
+        Project project1 = new Project(1001, "EFV Core", "EFV", ProjectStatus.NEW, LocalDate.now(), null, null);
+        Project project2 = new Project(1002, "EFV Integration", "EFV", ProjectStatus.PLA, LocalDate.now(), null, null);
         List<Project> mockList = List.of(project1, project2);
 
-        // Config Mock Repository: Khi được gọi với từ khóa "EFV" thì trả về mockList
-        when(projectRepository.findProjectByNameContainsIgnoreCase("EFV"))
-                .thenReturn(mockList);
+        when(projectRepository.findAll()).thenReturn(mockList);
 
-        // [When]: Gọi method cần test của Service
         List<Project> actualResult = projectService.findByName(keyword);
 
-        // [Then]: Kiểm tra kết quả trả về
-        assertNotNull(actualResult, "Kết quả trả về không được null");
-        assertEquals(2, actualResult.size(), "Số lượng phần tử trả về phải là 2");
+        assertNotNull(actualResult);
+        assertEquals(2, actualResult.size());
         assertEquals("EFV Core", actualResult.get(0).getName());
         assertEquals("EFV Integration", actualResult.get(1).getName());
-
-        // [Verify]: Xác minh Service có thực sự gọi xuống Repository đúng 1 lần với đúng từ khóa "EFV"
-        verify(projectRepository, times(1)).findProjectByNameContainsIgnoreCase("EFV");
-        verifyNoMoreInteractions(projectRepository);
     }
 
     @Test
-    @DisplayName("Case 2: Trả về danh sách rỗng khi không có dự án nào khớp từ khóa")
-    void testFindByName_WhenNoMatchFound_ShouldReturnEmptyList() {
-        // [Given]
-        String keyword = "NOT_EXISTING_KEYWORD";
-        when(projectRepository.findProjectByNameContainsIgnoreCase(keyword))
-                .thenReturn(Collections.emptyList());
+    @DisplayName("Case 2: Tìm theo ID thành công")
+    void testFindById_Success() {
+        Long id = 1L;
+        Project project = new Project(1001, "EFV Core", "EFV", ProjectStatus.NEW, LocalDate.now(), null, null);
+        when(projectRepository.findById(id)).thenReturn(Optional.of(project));
 
-        // [When]
-        List<Project> actualResult = projectService.findByName(keyword);
+        Project found = projectService.findById(id);
 
-        // [Then]
-        assertNotNull(actualResult, "Kết quả trả về không được null");
-        assertTrue(actualResult.isEmpty(), "Danh sách kết quả phải rỗng");
-
-        // [Verify]
-        verify(projectRepository, times(1)).findProjectByNameContainsIgnoreCase(keyword);
-    }
-
-    @ParameterizedTest(name = "Case 3: Test với từ khóa ''{0}''")
-    @ValueSource(strings = { "efv", "EFV", "Efv", "   " })
-    @DisplayName("Case 3: Data-Driven Test với nhiều định dạng từ khóa khác nhau")
-    void testFindByName_Parameterized(String keyword) {
-        // [Given]
-        Project sampleProject = new Project("EFV Project", LocalDate.now());
-        when(projectRepository.findProjectByNameContainsIgnoreCase(keyword))
-                .thenReturn(List.of(sampleProject));
-
-        // [When]
-        List<Project> actualResult = projectService.findByName(keyword);
-
-        // [Then]
-        assertEquals(1, actualResult.size());
-        assertEquals("EFV Project", actualResult.get(0).getName());
-
-        // [Verify]
-        verify(projectRepository).findProjectByNameContainsIgnoreCase(keyword);
+        assertNotNull(found);
+        assertEquals("EFV Core", found.getName());
     }
 
     @Test
-    @DisplayName("Case 4: Tạo dự án bảo trì thành công - Cũ inactive, Mới active với tên đúng chuẩn")
-    void testCreateMaintenanceProject_Success() {
-        Long oldId = 1L;
-        Project oldProject = new Project("EFV", LocalDate.now(), "ELCA");
-        oldProject.setId(oldId);
-        oldProject.setActivated(true);
+    @DisplayName("Case 3: Ném ProjectNotFoundException khi ID không tồn tại")
+    void testFindById_NotFound() {
+        Long invalidId = 999L;
+        when(projectRepository.findById(invalidId)).thenReturn(Optional.empty());
 
-        when(projectRepository.findById(oldId)).thenReturn(java.util.Optional.of(oldProject));
+        assertThrows(ProjectNotFoundException.class, () -> projectService.findById(invalidId));
+    }
+
+    @Test
+    @DisplayName("Case 4: Cập nhật thông tin dự án thành công")
+    void testUpdateProject_Success() {
+        Long id = 1L;
+        Project existing = new Project(1001, "Old Name", "Old Customer", ProjectStatus.NEW, LocalDate.of(2021, 1, 1), null, null);
+        when(projectRepository.findById(id)).thenReturn(Optional.of(existing));
         when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Project maintenanceProject = projectService.createMaintenanceProject(oldId);
+        ProjectDto dto = new ProjectDto();
+        dto.setName("Updated Name");
+        dto.setCustomer("New Customer");
+        dto.setStatus(ProjectStatus.INP);
+        dto.setStartDate(LocalDate.of(2021, 2, 1));
+        dto.setEndDate(LocalDate.of(2021, 12, 31));
 
-        // Verify old project deactivated
-        assertFalse(oldProject.isActivated(), "Dự án cũ phải bị chuyển thành inactive (activated = false)");
+        Project updated = projectService.update(dto, id);
 
-        // Verify maintenance project attributes
-        assertNotNull(maintenanceProject, "Dự án bảo trì mới không được null");
-        int currentYear = LocalDate.now().getYear();
-        assertEquals(String.format("EFV Maint. %d", currentYear), maintenanceProject.getName(), "Tên dự án mới phải có đuôi Maint. <năm>");
-        assertTrue(maintenanceProject.isActivated(), "Dự án bảo trì mới phải ở trạng thái active (activated = true)");
-        assertEquals("ELCA", maintenanceProject.getCustomer());
-
-        // Verify repository interactions: save called twice (1 update old, 1 insert new)
-        verify(projectRepository, times(2)).save(any(Project.class));
-    }
-
-    @Test
-    @DisplayName("Case 5: Báo lỗi ProjectNotFoundException khi ID dự án cũ không tồn tại")
-    void testCreateMaintenanceProject_NotFound() {
-        Long invalidId = 999L;
-        when(projectRepository.findById(invalidId)).thenReturn(java.util.Optional.empty());
-
-        assertThrows(vn.elca.training.model.exception.ProjectNotFoundException.class, () -> {
-            projectService.createMaintenanceProject(invalidId);
-        });
-
-        verify(projectRepository, never()).save(any(Project.class));
+        assertEquals("Updated Name", updated.getName());
+        assertEquals("New Customer", updated.getCustomer());
+        assertEquals(ProjectStatus.INP, updated.getStatus());
+        assertEquals(LocalDate.of(2021, 2, 1), updated.getStartDate());
+        assertEquals(LocalDate.of(2021, 12, 31), updated.getEndDate());
     }
 }

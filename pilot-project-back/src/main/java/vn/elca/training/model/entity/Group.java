@@ -1,50 +1,31 @@
 package vn.elca.training.model.entity;
 
-import javax.persistence.*;
-import java.util.List;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 @Entity
-@Table(name = "PROJECT_GROUP")
-public class Group {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@Table(name = "`GROUP`")
+public class Group extends AbstractEntity {
 
-    @OneToOne
-    @JoinColumn(name = "GROUP_LEADER_ID")
-    private User groupLeader;
-
-    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Project> projects = new java.util.ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "GROUP_LEADER_ID", nullable = false)
+    private Employee groupLeader;
 
     public Group() {
     }
 
-    public Group(User groupLeader) {
+    public Group(Employee groupLeader) {
         this.groupLeader = groupLeader;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public User getGroupLeader() {
+    public Employee getGroupLeader() {
         return groupLeader;
     }
 
-    public void setGroupLeader(User groupLeader) {
+    public void setGroupLeader(Employee groupLeader) {
         this.groupLeader = groupLeader;
-    }
-
-    public List<Project> getProjects() {
-        return projects;
-    }
-
-    public void setProjects(List<Project> projects) {
-        this.projects = projects;
     }
 }

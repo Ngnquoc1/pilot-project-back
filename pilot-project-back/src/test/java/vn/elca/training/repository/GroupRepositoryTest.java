@@ -8,9 +8,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import vn.elca.training.ApplicationWebConfig;
+import vn.elca.training.model.entity.Employee;
 import vn.elca.training.model.entity.Group;
-import vn.elca.training.model.entity.User;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @ContextConfiguration(classes = {ApplicationWebConfig.class})
@@ -22,17 +23,18 @@ public class GroupRepositoryTest {
     private GroupRepository groupRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private EmployeeRepository employeeRepository;
 
     @Test
     public void testSaveAndFindGroup() {
-        User leader = userRepository.save(new User("QMV", "Quoc Manh"));
+        Employee leader = employeeRepository.save(new Employee("QMV", "Quoc", "Manh", LocalDate.of(1995, 4, 11)));
         Group group = new Group(leader);
         Group savedGroup = groupRepository.save(group);
 
         Assert.assertNotNull(savedGroup.getId());
+        Assert.assertNotNull(savedGroup.getVersion());
         Optional<Group> found = groupRepository.findById(savedGroup.getId());
         Assert.assertTrue(found.isPresent());
-        Assert.assertEquals("QMV", found.get().getGroupLeader().getUsername());
+        Assert.assertEquals("QMV", found.get().getGroupLeader().getVisa());
     }
 }

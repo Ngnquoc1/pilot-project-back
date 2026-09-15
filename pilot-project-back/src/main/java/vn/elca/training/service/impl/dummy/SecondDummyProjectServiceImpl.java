@@ -44,8 +44,4 @@ public class SecondDummyProjectServiceImpl extends AbstractDummyProjectService i
         throw new UnsupportedOperationException("This is second dummy service");
     }
 
-    @Override
-    public Project createMaintenanceProject(Long oldProjectId) {
-        throw new UnsupportedOperationException("This is second dummy service");
-    }
 }
