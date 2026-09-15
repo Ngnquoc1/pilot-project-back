@@ -10,7 +10,7 @@ INSERT INTO EMPLOYEE (VISA, FIRST_NAME, LAST_NAME, BIRTH_DATE, VERSION) VALUES
 ('PL2', 'Project', 'Leader 2', '1987-03-30', 0);
 
 -- 2. Groups (note: table name escaped with backticks for SQL reserved keyword)
-INSERT INTO `GROUP` (GROUP_LEADER_ID, VERSION) VALUES
+INSERT INTO "group" (GROUP_LEADER_ID, VERSION) VALUES
 (5, 0),
 (6, 0);
 

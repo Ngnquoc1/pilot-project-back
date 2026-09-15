@@ -15,6 +15,7 @@ import vn.elca.training.model.entity.*;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @ContextConfiguration(classes = {ApplicationWebConfig.class})
@@ -41,6 +42,7 @@ public class ProjectRepositoryTest {
     public void setUp() {
         leader = employeeRepository.save(new Employee("LEA", "Leader", "Test", LocalDate.of(1985, 1, 1)));
         defaultGroup = groupRepository.save(new Group(leader));
+
     }
 
     @Test
@@ -114,5 +116,49 @@ public class ProjectRepositoryTest {
         Project found = projectRepository.findById(saved.getId()).orElse(null);
         Assert.assertNotNull(found);
         Assert.assertEquals(2, found.getMembers().size());
+    }
+
+    @Test
+    public void testSearchProjects_ByKeywordName() {
+
+        List<Project> results = projectRepository.searchProjects("EFV", null);
+        Assert.assertEquals(1, results.size());
+        Assert.assertEquals(Integer.valueOf(1001), results.get(0).getProjectNumber());
+    }
+
+    @Test
+    public void testSearchProjects_ByKeywordCustomer() {
+
+        List<Project> results = projectRepository.searchProjects("Secutix", null);
+        Assert.assertEquals(1, results.size());
+        Assert.assertEquals("CRYSTAL BALL Analytics", results.get(0).getName());
+    }
+
+    @Test
+    public void testSearchProjects_ByProjectNumber() {
+        // Tìm theo số dự án "1004"
+        List<Project> results = projectRepository.searchProjects("1004", null);
+        Assert.assertEquals(1, results.size());
+        Assert.assertEquals(Integer.valueOf(1004), results.get(0).getProjectNumber());
+    }
+
+    @Test
+    public void testSearchProjects_ByStatusOnly() {
+
+        List<Project> results = projectRepository.searchProjects(null, ProjectStatus.NEW);
+        Assert.assertEquals(2, results.size());
+        Assert.assertTrue(results.stream().allMatch(p -> p.getStatus() == ProjectStatus.NEW));
+
+        Assert.assertEquals(Integer.valueOf(1001), results.get(0).getProjectNumber());
+        Assert.assertEquals(Integer.valueOf(1005), results.get(1).getProjectNumber());
+    }
+
+    @Test
+    public void testSearchProjects_EmptyCriteria_ShouldReturnAllSortedAsc() {
+        // Không truyền tiêu chí nào -> Trả về toàn bộ danh sách sắp xếp tăng dần
+        List<Project> results = projectRepository.searchProjects("", null);
+        Assert.assertEquals(5, results.size());
+        Assert.assertEquals(Integer.valueOf(1001), results.get(0).getProjectNumber());
+        Assert.assertEquals(Integer.valueOf(1005), results.get(4).getProjectNumber());
     }
 }
