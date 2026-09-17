@@ -3,13 +3,25 @@ package vn.elca.training.service.impl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.elca.training.model.dto.ProjectDto;
+import vn.elca.training.model.entity.Employee;
+import vn.elca.training.model.entity.Group;
 import vn.elca.training.model.entity.Project;
+import vn.elca.training.model.entity.ProjectStatus;
+import vn.elca.training.model.exception.InvalidProjectStatusForDeletionException;
 import vn.elca.training.model.exception.ProjectNotFoundException;
+import vn.elca.training.repository.EmployeeRepository;
+import vn.elca.training.repository.GroupRepository;
 import vn.elca.training.repository.ProjectRepository;
 import vn.elca.training.service.ProjectService;
+import vn.elca.training.util.ApplicationMapper;
+import vn.elca.training.validator.ProjectValidator;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author vlp
@@ -19,53 +31,108 @@ import java.util.List;
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final GroupRepository groupRepository;
+    private final ProjectValidator projectValidator;
+    private final EmployeeRepository employeeRepository;
+    private final ApplicationMapper applicationMapper;
 
     @Autowired
-    public ProjectServiceImpl(ProjectRepository projectRepository) {
+    public ProjectServiceImpl(ProjectRepository projectRepository,
+                              ProjectValidator projectValidator,
+                              GroupRepository groupRepository,
+                              EmployeeRepository employeeRepository,
+                              ApplicationMapper applicationMapper) {
         this.projectRepository = projectRepository;
+        this.groupRepository = groupRepository;
+        this.employeeRepository = employeeRepository;
+        this.projectValidator = projectValidator;
+        this.applicationMapper = applicationMapper;
     }
 
     @Override
-    public List<Project> findAll() {
-        return projectRepository.findAll();
-    }
-
-    @Override
-    public List<Project> findByName(String keyword) {
-        return projectRepository.findAll();
-    }
-
-    @Override
-    public Project findById(Long id) {
-        return projectRepository.findById(id)
+    public ProjectDto findById(Long id) {
+        Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
+        return applicationMapper.projectToProjectDto(project);
     }
 
     @Override
-    public Project update(ProjectDto projectDto, Long id) {
+    public List<ProjectDto> searchProjects(String keyword, ProjectStatus status) {
+        return projectRepository.searchProjects(keyword, status)
+                .stream()
+                .map(applicationMapper::projectToProjectDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public ProjectDto create(ProjectDto projectDto) throws IllegalArgumentException {
+        projectValidator.validateForCreate(projectDto);
+
+        Project newProject = new Project();
+        newProject.setProjectNumber(projectDto.getProjectNumber());
+
+        mapDtoToEntity(newProject, projectDto);
+
+        Project savedProject = projectRepository.save(newProject);
+        return applicationMapper.projectToProjectDto(savedProject);
+    }
+
+    @Override
+    @Transactional
+    public ProjectDto update(ProjectDto projectDto, Long id) {
         Project existingProject = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
 
-        if (projectDto.getName() != null) {
-            existingProject.setName(projectDto.getName());
+        projectValidator.validateForUpdate(existingProject, projectDto);
+
+        mapDtoToEntity(existingProject, projectDto);
+
+        Project savedProject = projectRepository.save(existingProject);
+        return applicationMapper.projectToProjectDto(savedProject);
+    }
+
+    @Override
+    @Transactional()
+    public void delete(List<Long> projectIds) {
+        if (projectIds == null || projectIds.isEmpty()) {
+            return;
         }
-        if (projectDto.getCustomer() != null) {
-            existingProject.setCustomer(projectDto.getCustomer());
+        List<Project> projects= projectRepository.findAllById(projectIds);
+        for(Project project:projects){
+            if (project.getStatus() != ProjectStatus.NEW)
+                throw new InvalidProjectStatusForDeletionException("Only projects with status 'NEW' can be deleted.");
         }
-        if (projectDto.getStatus() != null) {
-            existingProject.setStatus(projectDto.getStatus());
-        }
-        if (projectDto.getStartDate() != null) {
-            existingProject.setStartDate(projectDto.getStartDate());
-        }
-        if (projectDto.getEndDate() != null) {
-            existingProject.setEndDate(projectDto.getEndDate());
-        }
-        return projectRepository.save(existingProject);
+        projectRepository.deleteAll(projects);
     }
 
     @Override
     public long count() {
         return projectRepository.count();
+    }
+
+    private void mapDtoToEntity(Project project, ProjectDto dto) {
+        project.setName(dto.getName().trim());
+        project.setCustomer(dto.getCustomer().trim());
+        project.setStartDate(dto.getStartDate());
+        project.setEndDate(dto.getEndDate());
+        project.setStatus(dto.getStatus() != null ? dto.getStatus() : ProjectStatus.NEW);
+
+        Group group = groupRepository.findById(dto.getGroupId())
+                .orElseThrow(() -> new IllegalArgumentException("Group not found with id: " + dto.getGroupId()));
+        project.setGroup(group);
+
+        Set<String> memberVisas = dto.getMemberVisas();
+        if (memberVisas != null && !memberVisas.isEmpty()) {
+            List<Employee> employees = employeeRepository.findByVisaIn(memberVisas);
+            project.setMembers(new HashSet<>(employees));
+        } else {
+            if (project.getMembers() != null) {
+                project.getMembers().clear();
+            } else {
+                project.setMembers(new HashSet<>());
+            }
+        }
+
     }
 }

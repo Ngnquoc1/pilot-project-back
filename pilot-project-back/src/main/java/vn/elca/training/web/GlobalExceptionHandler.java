@@ -2,26 +2,38 @@ package vn.elca.training.web;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import vn.elca.training.model.dto.ErrorResponseDto;
 import vn.elca.training.model.exception.ApplicationUnexpectedException;
+import vn.elca.training.model.exception.EmployeeVisaNotFoundException;
+import vn.elca.training.model.exception.InvalidProjectStatusForDeletionException;
 import vn.elca.training.model.exception.ProjectNotFoundException;
+import vn.elca.training.model.exception.ProjectNumberAlreadyException;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Global exception handler for REST controllers.
+ * Catches domain and framework exceptions, logging them and converting them
+ * into standardized ErrorResponseDto objects with appropriate HTTP status codes.
+ *
+ * @author nnnq
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private final Log logger = LogFactory.getLog(getClass());
 
     /**
-     * 1. Project NOT FOUND_HTTP 404 Not Found
+     * 1. Project Not Found -> HTTP 404 Not Found
      */
     @ExceptionHandler(ProjectNotFoundException.class)
     public ResponseEntity<ErrorResponseDto> handleProjectNotFound(ProjectNotFoundException ex) {
@@ -34,9 +46,64 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
+    /**
+     * 2. Project Number Already Exists -> HTTP 400 Bad Request
+     */
+    @ExceptionHandler(ProjectNumberAlreadyException.class)
+    public ResponseEntity<ErrorResponseDto> handleProjectNumberAlready(ProjectNumberAlreadyException ex) {
+        logger.warn("Project number already exists: " + ex.getMessage());
+        ErrorResponseDto error = new ErrorResponseDto(
+                HttpStatus.BAD_REQUEST.value(),
+                "PROJECT_NUMBER_ALREADY_EXISTED",
+                ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
 
     /**
-     * 3. Illegal Argument_HTTP 400 Bad Request
+     * 3. Employee Visa Not Found -> HTTP 400 Bad Request
+     */
+    @ExceptionHandler(EmployeeVisaNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleEmployeeVisaNotFound(EmployeeVisaNotFoundException ex) {
+        logger.warn("Employee VISA not found: " + ex.getMessage());
+        ErrorResponseDto error = new ErrorResponseDto(
+                HttpStatus.BAD_REQUEST.value(),
+                "EMPLOYEE_VISA_NOT_FOUND",
+                ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * 4. Invalid Project Status For Deletion -> HTTP 400 Bad Request
+     */
+    @ExceptionHandler(InvalidProjectStatusForDeletionException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidProjectStatusForDeletion(InvalidProjectStatusForDeletionException ex) {
+        logger.warn("Invalid project status for deletion: " + ex.getMessage());
+        ErrorResponseDto error = new ErrorResponseDto(
+                HttpStatus.BAD_REQUEST.value(),
+                "INVALID_PROJECT_STATUS_FOR_DELETION",
+                ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * 5. Optimistic Locking / Concurrent Modification Conflict -> HTTP 409 Conflict
+     */
+    @ExceptionHandler({OptimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class})
+    public ResponseEntity<ErrorResponseDto> handleOptimisticLockingFailure(Exception ex) {
+        logger.warn("Optimistic locking conflict detected: " + ex.getMessage());
+        ErrorResponseDto error = new ErrorResponseDto(
+                HttpStatus.CONFLICT.value(),
+                "CONCURRENT_UPDATE_CONFLICT",
+                "The project was updated or deleted by another transaction. Please refresh the page and try again."
+        );
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+    }
+
+    /**
+     * 6. Illegal Argument (Business rule validation) -> HTTP 400 Bad Request
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex) {
@@ -50,7 +117,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 3.1. Illegal State (e.g. duplicate maintenance project in transaction)_HTTP 400 Bad Request
+     * 7. Illegal State -> HTTP 400 Bad Request
      */
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponseDto> handleIllegalState(IllegalStateException ex) {
@@ -64,7 +131,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 4. Bean Validation @Valid (HTTP 400 Bad Request)
+     * 8. Bean Validation @Valid -> HTTP 400 Bad Request
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDto> handleValidationExceptions(MethodArgumentNotValidException ex) {
@@ -83,7 +150,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 5. HTTP 500 Internal Server Error
+     * 9. Application Unexpected Error -> HTTP 500 Internal Server Error
      */
     @ExceptionHandler(ApplicationUnexpectedException.class)
     public ResponseEntity<ErrorResponseDto> handleApplicationUnexpected(ApplicationUnexpectedException ex) {
@@ -98,7 +165,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 6. Others Unexpected Error_HTTP 500 Internal Server Error
+     * 10. Fallback for All Other Unhandled Errors -> HTTP 500 Internal Server Error
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGeneralException(Exception ex) {
