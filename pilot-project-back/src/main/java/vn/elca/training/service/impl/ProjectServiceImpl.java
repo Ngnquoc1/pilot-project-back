@@ -50,6 +50,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProjectDto findById(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
@@ -57,6 +58,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProjectDto> searchProjects(String keyword, ProjectStatus status) {
         return projectRepository.searchProjects(keyword, status)
                 .stream()
@@ -74,7 +76,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         mapDtoToEntity(newProject, projectDto);
 
-        Project savedProject = projectRepository.save(newProject);
+        Project savedProject = projectRepository.saveAndFlush(newProject);
         return applicationMapper.projectToProjectDto(savedProject);
     }
 
@@ -88,7 +90,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         mapDtoToEntity(existingProject, projectDto);
 
-        Project savedProject = projectRepository.save(existingProject);
+        Project savedProject = projectRepository.saveAndFlush(existingProject);
         return applicationMapper.projectToProjectDto(savedProject);
     }
 
@@ -117,7 +119,7 @@ public class ProjectServiceImpl implements ProjectService {
         project.setStartDate(dto.getStartDate());
         project.setEndDate(dto.getEndDate());
         project.setStatus(dto.getStatus() != null ? dto.getStatus() : ProjectStatus.NEW);
-
+        project.setVersion(dto.getVersion());
         Group group = groupRepository.findById(dto.getGroupId())
                 .orElseThrow(() -> new IllegalArgumentException("Group not found with id: " + dto.getGroupId()));
         project.setGroup(group);

@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "PIM Tool API",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

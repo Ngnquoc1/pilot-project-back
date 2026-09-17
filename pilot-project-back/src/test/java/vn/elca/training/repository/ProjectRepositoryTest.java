@@ -155,7 +155,6 @@ public class ProjectRepositoryTest {
 
     @Test
     public void testSearchProjects_EmptyCriteria_ShouldReturnAllSortedAsc() {
-        // Không truyền tiêu chí nào -> Trả về toàn bộ danh sách sắp xếp tăng dần
         List<Project> results = projectRepository.searchProjects("", null);
         Assert.assertEquals(5, results.size());
         Assert.assertEquals(Integer.valueOf(1001), results.get(0).getProjectNumber());

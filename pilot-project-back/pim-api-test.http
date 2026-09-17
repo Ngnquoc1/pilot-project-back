@@ -1,0 +1,228 @@
+### ==========================================================================
+### PIM TOOL - COMPREHENSIVE REST API TEST SUITE
+### Run directly in IntelliJ IDEA by clicking the green Run icon (triangle)
+### ==========================================================================
+
+@baseUrl = http://localhost:8080
+
+### --------------------------------------------------------------------------
+### 1. HAPPY PATH: Get all Employees
+### Expected: 200 OK, returns list of employees (DTH, BHU, JHV, NNQ, PL1, PL2)
+### --------------------------------------------------------------------------
+GET {{baseUrl}}/employees
+Accept: application/json
+
+### --------------------------------------------------------------------------
+### 2. HAPPY PATH: Get all Groups (with Group Leader details)
+### Expected: 200 OK, returns list of groups with leader DTOs
+### --------------------------------------------------------------------------
+GET {{baseUrl}}/groups
+Accept: application/json
+
+### --------------------------------------------------------------------------
+### 3. HAPPY PATH: Search Projects (by keyword & status)
+### Expected: 200 OK, returns project 1001 (EFV Core Banking - NEW)
+### --------------------------------------------------------------------------
+GET {{baseUrl}}/projects/search?keyword=EFV&status=NEW
+Accept: application/json
+
+### --------------------------------------------------------------------------
+### 4. HAPPY PATH: Get Project detail by valid ID
+### Expected: 200 OK, returns detail of project ID 1
+### --------------------------------------------------------------------------
+GET {{baseUrl}}/projects/1
+Accept: application/json
+
+### ==========================================================================
+### ERROR SCENARIOS (VERIFY GLOBAL EXCEPTION HANDLER)
+### ==========================================================================
+
+### --------------------------------------------------------------------------
+### 5. ERROR 404: Query non-existent Project ID
+### Breakpoint locations:
+###   - ProjectController.java: searchById()
+###   - GlobalExceptionHandler.java: handleProjectNotFound()
+### Expected: 404 Not Found, error: "RESOURCE_NOT_FOUND"
+### --------------------------------------------------------------------------
+GET {{baseUrl}}/projects/99999
+Accept: application/json
+
+### --------------------------------------------------------------------------
+### 6. HAPPY PATH: Create Project successfully
+### Expected: 201 Created, returns created project with version = 0
+### --------------------------------------------------------------------------
+POST {{baseUrl}}/projects
+Content-Type: application/json
+
+{
+  "projectNumber": 8888,
+  "name": "IntelliJ Debug Test Project",
+  "customer": "ELCA Vietnam",
+  "groupId": 1,
+  "status": "NEW",
+  "startDate": "2026-09-01",
+  "endDate": "2026-12-31",
+  "memberVisas": ["DTH", "BHU"]
+}
+
+### --------------------------------------------------------------------------
+### 7. ERROR 400: Duplicate Project Number (ProjectNumberAlreadyException)
+### Send projectNumber = 1001 (already present in data.sql)
+### Breakpoint locations:
+###   - ProjectValidator.java: validateForCreate()
+###   - GlobalExceptionHandler.java: handleProjectNumberAlready()
+### Expected: 400 Bad Request, error: "PROJECT_NUMBER_ALREADY_EXISTED"
+### --------------------------------------------------------------------------
+POST {{baseUrl}}/projects
+Content-Type: application/json
+
+{
+  "projectNumber": 1001,
+  "name": "Duplicate Number Project",
+  "customer": "Customer A",
+  "groupId": 1,
+  "status": "NEW",
+  "startDate": "2026-09-01"
+}
+
+### --------------------------------------------------------------------------
+### 8. ERROR 400: Mandatory field missing (Blank Project Name)
+### Breakpoint locations:
+###   - ProjectValidator.java: validateCommon()
+###   - GlobalExceptionHandler.java: handleIllegalArgument()
+### Expected: 400 Bad Request, message: "Project Name is mandatory"
+### --------------------------------------------------------------------------
+POST {{baseUrl}}/projects
+Content-Type: application/json
+
+{
+  "projectNumber": 8889,
+  "name": "   ",
+  "customer": "Customer B",
+  "groupId": 1,
+  "status": "NEW",
+  "startDate": "2026-09-01"
+}
+
+### --------------------------------------------------------------------------
+### 9. ERROR 400: End date before Start date (Date validation)
+### Breakpoint locations:
+###   - ProjectValidator.java: validateCommon()
+###   - GlobalExceptionHandler.java: handleIllegalArgument()
+### Expected: 400 Bad Request, message: "End date must be after or equal to Start date"
+### --------------------------------------------------------------------------
+POST {{baseUrl}}/projects
+Content-Type: application/json
+
+{
+  "projectNumber": 8890,
+  "name": "Invalid Date Project",
+  "customer": "Customer C",
+  "groupId": 1,
+  "status": "NEW",
+  "startDate": "2026-12-31",
+  "endDate": "2026-01-01"
+}
+
+### --------------------------------------------------------------------------
+### 10. ERROR 400: Employee VISA does not exist (EmployeeVisaNotFoundException)
+### Input visas "UNKNOWN_VISA_XYZ" not found in EMPLOYEE table
+### Breakpoint locations:
+###   - ProjectValidator.java: validateCommon()
+###   - GlobalExceptionHandler.java: handleEmployeeVisaNotFound()
+### Expected: 400 Bad Request, error: "EMPLOYEE_VISA_NOT_FOUND"
+### --------------------------------------------------------------------------
+POST {{baseUrl}}/projects
+Content-Type: application/json
+
+{
+  "projectNumber": 8891,
+  "name": "Wrong Visa Project",
+  "customer": "Customer D",
+  "groupId": 1,
+  "status": "NEW",
+  "startDate": "2026-09-01",
+  "memberVisas": ["DTH", "UNKNOWN_VISA_XYZ"]
+}
+
+### --------------------------------------------------------------------------
+### 11. ERROR 400: Change Project Number in Edit Mode
+### Project ID 1 has projectNumber = 1001. Attempting to update to 9999.
+### Breakpoint locations:
+###   - ProjectValidator.java: validateForUpdate()
+###   - GlobalExceptionHandler.java: handleIllegalArgument()
+### Expected: 400 Bad Request, message: "Project number cannot be changed in edit mode"
+### --------------------------------------------------------------------------
+PUT {{baseUrl}}/projects/1
+Content-Type: application/json
+
+{
+  "projectNumber": 9999,
+  "name": "Try change number",
+  "customer": "EFV",
+  "groupId": 1,
+  "status": "NEW",
+  "startDate": "2021-01-01",
+  "version": 0
+}
+
+### --------------------------------------------------------------------------
+### 12. ERROR 400: Delete project with status other than NEW (InvalidProjectStatusForDeletionException)
+### Project ID 2 has status = 'PLA' (Planned)
+### Breakpoint locations:
+###   - ProjectServiceImpl.java: delete()
+###   - GlobalExceptionHandler.java: handleInvalidProjectStatusForDeletion()
+### Expected: 400 Bad Request, error: "INVALID_PROJECT_STATUS_FOR_DELETION"
+### --------------------------------------------------------------------------
+DELETE {{baseUrl}}/projects
+Content-Type: application/json
+
+[2]
+
+### --------------------------------------------------------------------------
+### 13. HAPPY PATH: Delete valid projects (status = 'NEW')
+### Project ID 5 (TRADEECO) has status = 'NEW'
+### Expected: 204 No Content
+### --------------------------------------------------------------------------
+DELETE {{baseUrl}}/projects
+Content-Type: application/json
+
+[5]
+
+### --------------------------------------------------------------------------
+### 14. ERROR 409: Optimistic Locking Conflict (Concurrent Update)
+### Step 1: Assume Project 1 is currently at version = 0.
+### First update succeeds -> Database version increments to 1:
+### --------------------------------------------------------------------------
+PUT {{baseUrl}}/projects/1
+Content-Type: application/json
+
+{
+  "projectNumber": 1001,
+  "name": "EFV Core Banking - Updated First Time",
+  "customer": "EFV",
+  "groupId": 1,
+  "status": "NEW",
+  "startDate": "2021-01-01",
+  "version": 0
+}
+
+### --------------------------------------------------------------------------
+### Step 2 (ERROR 409): Another client sends an update with stale version (version = 0)
+### Breakpoint locations:
+###   - ProjectValidator.java: validateForUpdate()
+###   - GlobalExceptionHandler.java: handleOptimisticLockingFailure()
+### Expected: 409 Conflict, error: "CONCURRENT_UPDATE_CONFLICT"
+### --------------------------------------------------------------------------
+PUT {{baseUrl}}/projects/1
+Content-Type: application/json
+
+{
+  "projectNumber": 1001,
+  "name": "EFV Core Banking - Stale Update Attempt",
+  "customer": "EFV",
+  "groupId": 1,
+  "status": "NEW",
+  "startDate": "2021-01-01",
+  "version": 0
+}

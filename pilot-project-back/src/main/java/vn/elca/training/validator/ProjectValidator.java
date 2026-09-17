@@ -95,9 +95,9 @@ public class ProjectValidator {
                 && !dto.getProjectNumber().equals(existingProject.getProjectNumber()))
             throw new IllegalArgumentException("Project number cannot be changed in edit mode");
 
-//        if (dto.getVersion() != null && !dto.getVersion().equals(existingProject.getVersion())) {
-//            throw new ObjectOptimisticLockingFailureException(Project.class, existingProject.getId());
-//        }
+        if (dto.getVersion() != null && !dto.getVersion().equals(existingProject.getVersion())) {
+            throw new ObjectOptimisticLockingFailureException(Project.class, existingProject.getId());
+        }
 
         validateCommon(dto);
     }

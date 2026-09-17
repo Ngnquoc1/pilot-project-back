@@ -23,10 +23,6 @@ import java.util.UUID;
 
 /**
  * Global exception handler for REST controllers.
- * Catches domain and framework exceptions, logging them and converting them
- * into standardized ErrorResponseDto objects with appropriate HTTP status codes.
- *
- * @author nnnq
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {

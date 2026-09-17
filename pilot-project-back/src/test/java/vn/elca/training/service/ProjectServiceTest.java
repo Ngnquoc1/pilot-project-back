@@ -120,7 +120,7 @@ public class ProjectServiceTest {
         doNothing().when(projectValidator).validateForCreate(dto);
         when(groupRepository.findById(1L)).thenReturn(Optional.of(mockGroup));
         when(employeeRepository.findByVisaIn(Set.of("ABC"))).thenReturn(List.of(mockEmployee));
-        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(projectRepository.saveAndFlush(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ProjectDto created = projectService.create(dto);
 
@@ -133,7 +133,7 @@ public class ProjectServiceTest {
         assertEquals(1, created.getMemberVisas().size());
 
         verify(projectValidator).validateForCreate(dto);
-        verify(projectRepository).save(any(Project.class));
+        verify(projectRepository).saveAndFlush(any(Project.class));
     }
 
     @Test
@@ -171,7 +171,7 @@ public class ProjectServiceTest {
         when(projectRepository.findById(id)).thenReturn(Optional.of(existing));
         doNothing().when(projectValidator).validateForUpdate(existing, dto);
         when(groupRepository.findById(2L)).thenReturn(Optional.of(mockGroup));
-        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(projectRepository.saveAndFlush(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ProjectDto updated = projectService.update(dto, id);
 
@@ -184,7 +184,7 @@ public class ProjectServiceTest {
         assertTrue(updated.getMemberVisas().isEmpty());
 
         verify(projectValidator).validateForUpdate(existing, dto);
-        verify(projectRepository).save(existing);
+        verify(projectRepository).saveAndFlush(existing);
     }
 
     @Test
@@ -221,11 +221,11 @@ public class ProjectServiceTest {
         doNothing().when(projectValidator).validateForUpdate(existing, dto);
         when(groupRepository.findById(1L)).thenReturn(Optional.of(mockGroup));
 
-        when(projectRepository.save(any(Project.class)))
+        when(projectRepository.saveAndFlush(any(Project.class)))
                 .thenThrow(new ObjectOptimisticLockingFailureException(Project.class, id));
 
         assertThrows(ObjectOptimisticLockingFailureException.class, () -> projectService.update(dto, id));
-        verify(projectRepository).save(existing);
+        verify(projectRepository).saveAndFlush(existing);
     }
 
     @Test
