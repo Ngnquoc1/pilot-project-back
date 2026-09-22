@@ -58,4 +58,6 @@ target/
 **/*.md
 !**/README.md
 !README.md
+!**/README_I18N.md
+
 

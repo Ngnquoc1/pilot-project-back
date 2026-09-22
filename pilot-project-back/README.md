@@ -2,6 +2,13 @@
 
 Tài liệu này tổng hợp:
 1. [**Phần I: Nhật ký lỗi và Cách khắc phục (Issue Log & Solutions)**](#phần-i-nhật-ký-lỗi-và-cách-khắc-phục-issue-log--solutions)
+   - [Mục 1: Lỗi không tìm thấy class `QProject` (QueryDSL Compilation Error)](#1-lỗi-không-tìm-thấy-class-qproject-querydsl-compilation-error)
+   - [Mục 2: Lỗi cấu hình Custom Repository với class `RenameThisClass` (Spring Data JPA Wiring Error)](#2-lỗi-cấu-hình-custom-repository-với-class-renamethisclass-spring-data-jpa-wiring-error)
+   - [Mục 3: Lỗi `NullPointerException` tại `ProjectServiceImpl.count()` (Missing Dependency Injection)](#3-lỗi-nullpointerexception-tại-projectserviceimplcount-missing-dependency-injection)
+   - [Mục 4: Lỗi Socket / Windows Loopback Connection (`Unable to establish loopback connection` - Mã lỗi 11050)](#4-lỗi-socket--windows-loopback-connection-unable-to-establish-loopback-connection---mã-lỗi-11050)
+   - [Mục 5: Lỗi `LazyInitializationException` khi ánh xạ DTO trong REST API](#5-lỗi-lazyinitializationexception-khi-ánh-xạ-dto-trong-rest-api)
+   - [Mục 6: Hiện tượng Version trong DTO Response không tăng sau khi Update (Stale DTO Version Return)](#6-hiện-tượng-version-trong-dto-response-không-tăng-sau-khi-update-stale-dto-version-return)
+   - [Mục 7: Nguy cơ mất dữ liệu ngầm (Lost Update Problem) và Cơ chế Optimistic Locking trong kiến trúc Stateless REST API DTO](#7-nguy-cơ-mất-dữ-liệu-ngầm-lost-update-problem-và-cơ-chế-optimistic-locking-trong-kiến-trúc-stateless-rest-api-dto)
 2. [**Phần II: Danh sách các bài tập đã hoàn thành (Completed Exercises)**](#phần-ii-danh-sách-các-bài-tập-đã-hoàn-thành-completed-exercises)
    - [Exercise 1: Spring Data JPA & QueryDSL Repositories](#exercise-1-spring-data-jpa--querydsl-repositories)
    - [Exercise 2: Quản lý giao dịch với Spring (Transaction Management with Spring)](#exercise-2-quản-lý-giao-dịch-với-spring-transaction-management-with-spring)
@@ -111,6 +118,292 @@ java.lang.NullPointerException: null
    @Value("${application.title}")
    private String title;
    ```
+
+---
+
+## 4. Lỗi Socket / Windows Loopback Connection (`Unable to establish loopback connection` - Mã lỗi 11050)
+
+### Mô tả lỗi
+Trong quá trình chạy kiểm thử tự động (`mvn test`) hoặc khởi động ứng dụng Spring Boot (`mvn spring-boot:run`), máy ảo Java (JVM) đột ngột gặp sự cố khởi tạo kênh giao tiếp mạng nội bộ hoặc bị treo, sau đó quăng ngoại lệ:
+```text
+java.io.IOException: Unable to establish loopback connection
+	at java.base/sun.nio.ch.PipeImpl$Initializer$LoopbackConnector.run(PipeImpl.java:101)
+	at java.base/sun.nio.ch.PipeImpl$Initializer.run(PipeImpl.java:62)
+	at java.base/sun.nio.ch.PipeImpl$Initializer.run(PipeImpl.java:50)
+	at java.base/java.security.AccessController.doPrivileged(Native Method)
+	at java.base/sun.nio.ch.PipeImpl.<init>(PipeImpl.java:170)
+	at java.base/sun.nio.ch.SelectorProviderImpl.openPipe(SelectorProviderImpl.java:56)
+	at java.base/java.nio.channels.Pipe.open(Pipe.java:155)
+```
+Đồng thời, khi mở Command Prompt hoặc PowerShell trên máy host kiểm tra lệnh ping loopback:
+```powershell
+PS C:\> ping 127.0.0.1
+Pinging 127.0.0.1 with 32 bytes of data:
+General failure.
+```
+Kiểm tra mã lỗi trả về từ Windows Socket API là mã lỗi **`11050` (WSA_E_CANCELLED / General failure)**.
+
+### Nguyên nhân sâu xa
+1. **Cơ chế hoạt động của Java NIO Pipe trên Windows**:
+   - Để hiện thực hóa cơ chế bất đồng bộ (Non-blocking I/O) và đánh thức luồng chọn (`Selector.wakeup()`), Java NIO trên Windows sử dụng một đường ống ngầm (*Loopback Pipe*).
+   - Java tạo một cặp socket client-server kết nối trực tiếp với nhau thông qua địa chỉ loopback cục bộ (`127.0.0.1` hoặc `::1`).
+2. **Xung đột tầng mạng (Winsock / WFP) do phần mềm VPN doanh nghiệp**:
+   - Khi máy tính cài đặt các phần mềm VPN (như **FortiClient**, **Cisco AnyConnect**) hoặc bật các tính năng ảo hóa (như **Hyper-V**, **WSL2**), hệ điều hành sẽ gắn thêm các Virtual Network Adapter và các bộ lọc mạng cấp thấp (WFP - Windows Filtering Platform / LSP - Layered Service Providers).
+   - Driver mạng ảo của VPN (tiêu biểu là `FortiClient Virtual Ethernet Adapter` hoặc `fcvserial`) sau một phiên kết nối/ngắt kết nối bất thường đã khóa chặn hoặc làm hỏng bảng định tuyến (routing table) của dải loopback cục bộ (`127.0.0.1`).
+   - Do đó, mọi nỗ lực của Java NIO nhằm mở cổng `127.0.0.1` để tạo socket nội bộ đều bị kernel Windows từ chối, gây ra lỗi `General failure (11050)` và khiến JVM không thể khởi tạo bộ chọn IO.
+
+### Các giải pháp khắc phục
+1. **Giải pháp 1: Khôi phục toàn diện Winsock & IP Stack của Windows (Khuyến nghị triệt để - Đã áp dụng)**:
+   - Mở Terminal (Command Prompt hoặc PowerShell) với quyền **Administrator** (Run as Administrator) và chạy liên tiếp 2 lệnh:
+     ```cmd
+     netsh winsock reset
+     netsh int ip reset
+     ```
+   - **Khởi động lại máy tính (Restart PC)**.
+   - *Cơ chế*: Lệnh này xóa toàn bộ cấu hình LSP/WFP bị phân mảnh, giải phóng các dải socket bị chiếm giữ bất hợp pháp và đặt lại cấu hình TCP/IP nguyên bản của Windows, cho phép `127.0.0.1` thông suốt trở lại.
+2. **Giải pháp 2: Vô hiệu hóa card mạng ảo của VPN khi phát triển Offline**:
+   - Vào `Control Panel` $\rightarrow$ `Network and Internet` $\rightarrow$ `Network Connections`.
+   - Tìm card mạng `FortiClient Virtual Ethernet Adapter`, chuột phải và chọn **Disable**.
+   - Sau khi tắt card mạng ảo, socket loopback sẽ không còn bị driver VPN can thiệp.
+3. **Giải pháp 3: Cấu hình JVM ép ưu tiên IPv4**:
+   - Trong một số trường hợp do cơ chế Dual-Stack (IPv4 xen lẫn IPv6), có thể cấu hình ép JVM sử dụng IPv4 bằng cách thiết lập biến môi trường hệ thống:
+     ```cmd
+     set JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true
+     ```
+
+---
+
+## 5. Lỗi `LazyInitializationException` khi ánh xạ DTO trong REST API
+
+### Mô tả lỗi
+Khi xây dựng endpoint RESTful API lấy chi tiết dự án (`GET /projects/{id}`) hoặc tìm kiếm dự án, hệ thống ném ngoại lệ thời gian chạy:
+```text
+org.hibernate.LazyInitializationException: could not initialize proxy [vn.elca.training.model.entity.Group#1] - no Session
+	at org.hibernate.proxy.AbstractLazyInitializer.initialize(AbstractLazyInitializer.java:169)
+	at org.hibernate.proxy.AbstractLazyInitializer.getImplementation(AbstractLazyInitializer.java:309)
+	at org.hibernate.proxy.pojo.bytebuddy.ByteBuddyInterceptor.intercept(ByteBuddyInterceptor.java:45)
+	at vn.elca.training.model.entity.Group$HibernateProxy$m4J1e.getName(Unknown Source)
+	at vn.elca.training.util.ProjectMapper.toDTO(ProjectMapper.java:42)
+	at vn.elca.training.service.impl.ProjectServiceImpl.findById(ProjectServiceImpl.java:68)
+	at vn.elca.training.web.ProjectController.findById(ProjectController.java:35)
+```
+
+### Nguyên nhân sâu xa
+1. **Chiến lược Lazy Loading của JPA/Hibernate**:
+   - Trong entity [`Project.java`](file:///C:/Users/nnnq/01_Trainee/newcomers-java-master@d35fff52243/pilot-project-back/src/main/java/vn/elca/training/model/entity/Project.java), các liên kết `@ManyToOne private Group group` và `@ManyToMany private Set<User> members` được cấu hình (hoặc mặc định) là `FetchType.LAZY`.
+   - Khi phương thức `projectRepository.findById(id)` được thực thi, Hibernate chỉ phát sinh một câu truy vấn `SELECT` trên bảng `PROJECT`. Thuộc tính `group` không chứa dữ liệu thực mà chỉ là một đối tượng giả lập **Hibernate Proxy** (sinh bởi ByteBuddy), còn `members` là một `PersistentSet` rỗng chưa khởi tạo.
+2. **Ranh giới Session (Persistence Context) bị đóng sớm**:
+   - Trong kiến trúc chuẩn của Spring Boot, nếu cấu hình tắt Open Session In View (`spring.jpa.open-in-view=false`) hoặc nếu hàm Service không được bao bọc bởi `@Transactional`, phiên làm việc của Hibernate (`Session`) sẽ **đóng lại ngay lập tức** sau khi `findById` hoàn tất.
+   - Khi tiến trình chạy đến tầng Mapper (`ProjectMapper.toDTO(project)`), code gọi các getter như `project.getGroup().getName()` hoặc duyệt qua danh sách `project.getMembers()`.
+   - Hibernate Proxy nhận thấy đối tượng chưa nạp nên cố gắng kết nối xuống CSDL để bắn tiếp câu lệnh SELECT con. Tuy nhiên, do Hibernate Session đã bị hủy (`no Session`), Proxy không còn kết nối JDBC nào nữa, dẫn đến `LazyInitializationException`.
+
+### Các cách giải quyết & Đánh giá chuyên sâu
+1. **Cách 1: Sử dụng `@EntityGraph` (Khuyến nghị chuẩn Enterprise - Đã áp dụng)**:
+   - Khai báo chỉ định kế hoạch nạp (Fetch Plan) tại interface [`ProjectRepository.java`](file:///C:/Users/nnnq/01_Trainee/newcomers-java-master@d35fff52243/pilot-project-back/src/main/java/vn/elca/training/repository/ProjectRepository.java):
+     ```java
+     @EntityGraph(attributePaths = {"group", "group.groupLeader", "members"})
+     Optional<Project> findById(Long id);
+     ```
+   - **Cơ chế**: Hibernate tự động thêm các mệnh đề `LEFT OUTER JOIN` để nạp toàn bộ `Project`, `Group`, `GroupLeader` và `Members` trong **duy nhất 1 câu lệnh SQL**.
+   - **Ưu điểm vượt trội**:
+     - Hoàn toàn triệt tiêu nguy cơ `LazyInitializationException`.
+     - Giải quyết triệt để bài toán **N+1 Query**, tối ưu tốc độ phản hồi API.
+     - Giữ nguyên thiết kế Entity với `FetchType.LAZY`, chỉ chủ động nạp đầy đủ ở những use-case thực sự cần thiết.
+2. **Cách 2: Sử dụng JPQL Fetch Join (`JOIN FETCH`)**:
+   - Định nghĩa câu truy vấn HQL/JPQL tường minh:
+     ```java
+     @Query("SELECT p FROM Project p " +
+            "LEFT JOIN FETCH p.group g " +
+            "LEFT JOIN FETCH g.groupLeader " +
+            "LEFT JOIN FETCH p.members WHERE p.id = :id")
+     Optional<Project> findByIdWithFullDetails(@Param("id") Long id);
+     ```
+   - **Cơ chế**: Tương đương `@EntityGraph`, Hibernate sinh lệnh JOIN tại tầng CSDL.
+3. **Cách 3: Sử dụng `@Transactional(readOnly = true)` tại tầng Service**:
+   - Đảm bảo ranh giới Transaction bao trùm toàn bộ quá trình từ lúc lấy Entity đến khi ánh xạ hoàn tất sang DTO.
+   - Session được giữ mở trong suốt hàm Service, cho phép Lazy Loading hoạt động.
+   - *Lưu ý*: Nếu chỉ dùng `@Transactional` mà không kết hợp `@EntityGraph`, hệ thống sẽ bị lỗi **N+1 Query** ngầm (mỗi thuộc tính lazy sẽ bắn thêm 1 câu SELECT độc lập xuống DB). Do đó, giải pháp tốt nhất là kết hợp cả hai: `@Transactional(readOnly = true)` tại Service và `@EntityGraph` tại Repository.
+4. **Tại sao KHÔNG nên dùng `FetchType.EAGER` trên Entity?**:
+   - Đặt `EAGER` trên entity là một **Anti-pattern cực lớn**. Nó biến việc nạp dữ liệu liên quan thành bắt buộc ở khắp mọi nơi trong ứng dụng. Bất kể khi bạn chỉ cần đếm số lượng dự án, kiểm tra trạng thái, hay tìm theo mã, Hibernate đều bị ép buộc phải JOIN toàn bộ bảng Group, User, Member, gây suy thoái hiệu năng toàn cục.
+5. **Tại sao KHÔNG nên bật `spring.jpa.open-in-view=true` (OSIV)?**:
+   - OSIV giữ kết nối CSDL (JDBC Connection) mở xuyên suốt từ lúc Controller nhận request đến tận khi gửi trả response HTTP xong cho client.
+   - Khi có độ trễ mạng hoặc logic xử lý dữ liệu phức tạp, việc này sẽ làm cạn kiệt Connection Pool của ứng dụng (Database Connection Starvation), đồng thời che giấu các câu truy vấn N+1 bừa bãi sinh ra từ tầng hiển thị/JSON serializer.
+
+---
+
+## 6. Hiện tượng Version trong DTO Response không tăng sau khi Update (Stale DTO Version Return)
+
+### Mô tả lỗi
+- Client gửi request cập nhật dự án qua API `PUT /projects/{id}` với dữ liệu hiện tại có `version = 0`.
+- Phía Server xử lý thành công, trả về HTTP status `200 OK`.
+- Kiểm tra trực tiếp trong Database, giá trị cột `VERSION` đã được Hibernate tăng lên `1`.
+- **Tuy nhiên, trong payload JSON phản hồi trả về cho client:**
+  ```json
+  {
+    "id": 1,
+    "projectNumber": 1001,
+    "name": "Project Name Updated",
+    "version": 0
+  }
+  ```
+  Trường `version` **vẫn bằng 0** thay vì `1`!
+- **Hậu quả**:
+  - Giao diện Frontend nhận được DTO phản hồi và lưu `version: 0` vào state/store của ứng dụng.
+  - Khi người dùng tiếp tục nhấn nút "Lưu" lần thứ 2 trên cùng màn hình đó, Frontend gửi tiếp request với `version: 0`.
+  - Phía Server đọc DB (lúc này DB đã là `1`), thấy `dto.getVersion() (0) != db.getVersion() (1)`, lập tức quăng lỗi `409 Conflict (OptimisticLockingFailureException)`. Người dùng bị chặn thao tác một cách oan uổng mặc dù họ vừa mới cập nhật thành công cách đó vài giây!
+
+### Nguyên nhân sâu xa
+Hiện tượng này xuất phát từ cơ chế **Transactional Write-Behind (Dirty Checking & Delayed Flush)** của Hibernate:
+1. Khi một hàm Service được đánh dấu `@Transactional`, việc gọi phương thức `projectRepository.save(existingProject)` **không hề thực thi câu lệnh SQL UPDATE xuống CSDL ngay lập tức**.
+2. Thay vào đó, Hibernate chỉ đánh dấu đối tượng Entity là "dirty" (bị thay đổi) trong bộ nhớ First-Level Cache (Persistence Context).
+3. Câu lệnh SQL thực tế:
+   ```sql
+   UPDATE PROJECT SET NAME = ?, VERSION = 1 WHERE ID = 1 AND VERSION = 0;
+   ```
+   và hành động cập nhật giá trị trường `version` trên đối tượng Java Entity (từ 0 lên 1) chỉ được Hibernate kích hoạt khi xảy ra quá trình **Flush**.
+4. Mặc định, quá trình Flush diễn ra tự động ngay trước khi Transaction Commit (tức là tại thời điểm luồng thực thi thoát ra khỏi phương thức `@Transactional` của Service).
+5. Trong mã nguồn ban đầu của Service:
+   ```java
+   @Transactional
+   public ProjectDTO update(ProjectDTO dto) {
+       Project existing = projectRepository.findById(dto.getId()).orElseThrow(...);
+       // Gán giá trị mới...
+       Project saved = projectRepository.save(existing); // <-- Chưa Flush! SQL UPDATE chưa chạy!
+       return projectMapper.toDTO(saved);               // <-- Lúc này saved.getVersion() vẫn bằng 0!
+   } // <-- Kết thúc hàm: Transaction Commit -> Hibernate mới Flush và tăng version lên 1!
+   ```
+   Do việc gọi `projectMapper.toDTO(saved)` diễn ra **trước** khi Transaction commit, trường `version` trong biến `saved` tại bộ nhớ Java vẫn mang giá trị cũ (`0`). Kết quả là DTO được chuyển đổi với `version = 0` trả về cho client.
+
+### Các cách giải quyết & Đánh giá
+1. **Cách 1: Sử dụng `saveAndFlush()` của Spring Data JPA (Khuyến nghị chuẩn - Đã áp dụng)**:
+   - Sửa phương thức gọi trong [`ProjectServiceImpl.java`](file:///C:/Users/nnnq/01_Trainee/newcomers-java-master@d35fff52243/pilot-project-back/src/main/java/vn/elca/training/service/impl/ProjectServiceImpl.java):
+     ```java
+     Project savedProject = projectRepository.saveAndFlush(existingProject);
+     return projectMapper.toDTO(savedProject);
+     ```
+   - **Cơ chế hoạt động**: Phương thức `saveAndFlush()` thực hiện lưu đối tượng và gọi ngay lập tức `entityManager.flush()`. Lúc này Hibernate bị ép buộc phải đồng bộ ngay toàn bộ thay đổi với CSDL: chạy câu lệnh SQL UPDATE và cập nhật lại trường `version` trên đối tượng Java Entity thành `1`. Khi dòng lệnh `toDTO` kế tiếp được gọi, đối tượng Entity đã mang `version = 1`, đảm bảo DTO trả về mang version mới nhất.
+2. **Cách 2: Gọi tường minh `entityManager.flush()`**:
+   - Tiêm `EntityManager` vào Service và gọi `entityManager.flush()` ngay sau `save()`.
+   - Về bản chất kỹ thuật hoàn toàn giống `saveAndFlush()`, nhưng `saveAndFlush()` ngắn gọn và nhất quán với kiến trúc Spring Data hơn.
+3. **Cách 3: Chuyển đổi DTO bên ngoài ranh giới Transaction hoặc nạp lại Entity**:
+   - Tách tầng Service chỉ trả về Entity, sau khi Transaction commit ở Controller mới map DTO, hoặc mở một transaction mới để `findById` lại.
+   - **Đánh giá**: Cách này tốn thêm một round-trip SELECT DB vô ích hoặc phá vỡ cấu trúc đóng gói xử lý nghiệp vụ của tầng Service.
+
+---
+
+## 7. Nguy cơ mất dữ liệu ngầm (Lost Update Problem) và Cơ chế Optimistic Locking trong kiến trúc Stateless REST API DTO
+
+### Mô tả vấn đề & Thắc mắc cốt lõi
+- *Tại sao Entity đã khai báo trường `@Version private Long version;` của JPA rồi, nhưng khi cập nhật thông qua REST API bằng DTO, Hibernate lại **KHÔNG tự động ném `OptimisticLockException`** nếu lập trình viên không chủ động viết mã kiểm tra?*
+- *Tại sao khi chuyển đổi từ DTO sang Entity bằng cách `findById` từ CSDL rồi gán các trường từ DTO sang, Hibernate vẫn thực thi lưu bình thường dù client gửi stale version?*
+- *Nếu không chủ động kiểm tra version, hậu quả nghiêm trọng gì sẽ xảy ra cho hệ thống?*
+
+### Kịch bản thực tế gây ra thảm họa "Lost Update Problem"
+Xét trường hợp một dự án Project có `id = 1` với dữ liệu ban đầu trong CSDL là:
+`{ id: 1, name: "PIM Initial", customer: "Customer A", version: 0 }`.
+
+1. **Thời điểm $T_1$**: Hai người dùng là **User 1 (Project Manager)** và **User 2 (Team Leader)** cùng lúc mở trang chi tiết để chỉnh sửa Project 1 trên trình duyệt. Cả hai đều nhận được DTO phản hồi mang `version = 0`.
+2. **Thời điểm $T_2$**: User 1 sửa tên dự án thành *"PIM Advanced 2026"* và nhấn nút **Save**.
+   - Request của User 1 gửi lên server:
+     `PUT /projects/1` với body: `{ id: 1, name: "PIM Advanced 2026", customer: "Customer A", version: 0 }`.
+   - Server xử lý: nạp entity từ DB (`version = 0`), gán tên mới, lưu thành công.
+   - Trên CSDL lúc này: `name = "PIM Advanced 2026"`, và cột `VERSION` tăng lên **`1`**.
+3. **Thời điểm $T_3$**: User 2 (vẫn đang mở màn hình cũ tải từ lúc $T_1$) sửa thông tin khách hàng thành *"Customer VinGroup"* và nhấn nút **Save**.
+   - Request của User 2 gửi lên server:
+     `PUT /projects/1` với body: `{ id: 1, name: "PIM Initial", customer: "Customer VinGroup", version: 0 }` *(Lưu ý: DTO của User 2 vẫn mang version cũ = 0)*.
+4. **Thời điểm $T_4$ (Phía Backend xử lý thông thường nếu KHÔNG kiểm tra version)**:
+   ```java
+   // Lấy bản ghi mới nhất từ DB lên:
+   Project existing = projectRepository.findById(dto.getId()).get(); 
+   // LƯU Ý: Lúc này existing được nạp từ DB có version = 1!
+   
+   // Lập trình viên gán các trường từ DTO sang:
+   existing.setName(dto.getName());         // "PIM Initial" (vô tình đè lại tên cũ!)
+   existing.setCustomer(dto.getCustomer()); // "Customer VinGroup"
+   
+   // Thực hiện lưu:
+   projectRepository.saveAndFlush(existing);
+   ```
+5. **Điều gì thực sự diễn ra bên trong Hibernate?**:
+   - Khi `findById` được gọi ở $T_4$, Hibernate truy vấn CSDL và nạp Entity vào First-Level Cache (Persistence Context).
+   - Hibernate tạo một bản chụp trạng thái (**`EntityEntry` Snapshot**) ghi nhận Entity này có `version = 1`.
+   - Khi `saveAndFlush(existing)` được gọi, Hibernate so sánh bản chụp trong Cache với CSDL và sinh câu lệnh SQL:
+     ```sql
+     UPDATE PROJECT 
+     SET NAME = 'PIM Initial', CUSTOMER = 'Customer VinGroup', VERSION = 2 
+     WHERE ID = 1 AND VERSION = 1;
+     ```
+   - Câu lệnh SQL trên khớp hoàn toàn với CSDL (vì cột `VERSION` trong DB lúc này đúng bằng `1`).
+   - Kết quả: **1 dòng được cập nhật thành công (Rows affected = 1)**!
+   - Hibernate kiểm tra thấy số dòng cập nhật là 1, nên kết luận giao dịch hợp lệ và commit thành công!
+6. **Hậu quả (Lost Update Disaster)**:
+   - Dữ liệu sửa đổi của User 1 ở $T_2$ đã bị User 2 **ghi đè hoàn toàn mà hệ thống không hề có bất kỳ cảnh báo hay lỗi nào**!
+   - Tên dự án bị rollback ngược về *"PIM Initial"*, dữ liệu bị mất mát âm thầm (Silent Data Corruption) – lỗi nguy hiểm bậc nhất trong các hệ thống doanh nghiệp.
+
+### Tại sao lại có hiện tượng này? (Cơ chế hoạt động sâu của Hibernate)
+- `@Version` của JPA được thiết kế để phát hiện xung đột **giữa bản chụp (Snapshot) trong Persistence Context và dữ liệu thực trong CSDL tại thời điểm Flush**.
+- Tuy nhiên, trong kiến trúc **Stateless RESTful API**:
+  - Giao thức HTTP không duy trì trạng thái (Stateless). Mỗi request là một Session Hibernate độc lập, được mở ra và đóng lại trong vài mili-giây.
+  - Khi User 2 gửi request ở $T_3$, một Session mới hoàn toàn được tạo ra. Phương thức `findById(id)` tải dữ liệu **mới nhất từ DB** (đã mang `version = 1`).
+  - DTO từ client gửi lên chứa `version = 0` (đại diện cho trạng thái mà User 2 nhìn thấy). Nhưng do lập trình viên chỉ sao chép các thuộc tính nghiệp vụ (`name`, `customer`) sang đối tượng `existing` mà **không so sánh version**, Hibernate hoàn toàn không thể biết được rằng dữ liệu người dùng đang thao tác dựa trên một trạng thái đã cũ trong quá khứ!
+
+### Phân tích các giải pháp xử lý & Lý do tại sao các phương án khác ít được sử dụng
+
+#### Giải pháp 1: Application-level Version Check kết hợp Managed Entity (Khuyến nghị chuẩn Enterprise - Đã áp dụng)
+- **Cách triển khai**:
+  Trong lớp kiểm tra tính hợp lệ [`ProjectValidator.java`](file:///C:/Users/nnnq/01_Trainee/newcomers-java-master@d35fff52243/pilot-project-back/src/main/java/vn/elca/training/validator/ProjectValidator.java):
+  ```java
+  public void validateForUpdate(ProjectDTO dto, Project existing) {
+      if (!Objects.equals(dto.getVersion(), existing.getVersion())) {
+          throw new ObjectOptimisticLockingFailureException(Project.class, dto.getId());
+      }
+      // Kiểm tra các ràng buộc nghiệp vụ khác...
+  }
+  ```
+  Sau đó tại [`GlobalExceptionHandler.java`](file:///C:/Users/nnnq/01_Trainee/newcomers-java-master@d35fff52243/pilot-project-back/src/main/java/vn/elca/training/web/GlobalExceptionHandler.java):
+  ```java
+  @ExceptionHandler(OptimisticLockingFailureException.class)
+  public ResponseEntity<Map<String, Object>> handleOptimisticLock(OptimisticLockingFailureException ex) {
+      Map<String, Object> error = new HashMap<>();
+      error.put("error", "OPTIMISTIC_LOCK_CONFLICT");
+      error.put("message", "The project has been modified by another user. Please refresh and try again.");
+      return ResponseEntity.status(HttpStatus.CONFLICT).body(error); // HTTP 409 Conflict
+  }
+  ```
+- **Tại sao đây là giải pháp tối ưu nhất?**:
+  - **Ngăn chặn 100% Lost Update**: Nếu `dto.getVersion()` lệch với `existing.getVersion()`, hệ thống lập tức từ chối cập nhật và trả về HTTP `409 Conflict`.
+  - **Bảo toàn toàn vẹn dữ liệu (Tránh hiểm họa Null Overwrite)**: Do nạp Entity từ `findById`, lập trình viên chủ động kiểm soát trường nào từ DTO được phép ghi vào Entity, giữ nguyên vẹn các cột nhạy cảm/không hiển thị trên form (như ngày tạo, người tạo, cấu hình bảo mật).
+  - **Quản lý quan hệ thực thể an toàn**: Mối quan hệ với `Group` và `Members` được kiểm tra và liên kết hợp lệ, không gây lỗi `TransientPropertyValueException`.
+
+#### Giải pháp 2: Sử dụng Detached Entity với `entityManager.merge()`
+- **Cách thực hiện**:
+  Không dùng `findById` để tải entity từ DB, mà tự tạo một Entity mới, gán `id` và `version` từ DTO (`detached.setVersion(dto.getVersion())`), sau đó gọi `entityManager.merge(detached)`.
+- **Cơ chế**: Khi `merge()` chạy, Hibernate sẽ so sánh `detached.getVersion()` (`0`) với giá trị hiện tại trong DB (`1`). Do phát hiện có sự sai lệch, Hibernate sẽ tự động ném ra `OptimisticLockException`.
+- **Tại sao phương án này KHÔNG ĐƯỢC DÙNG RỘNG RÃI trong thực tế? (Cực kỳ nguy hiểm)**:
+  1. **Hiểm họa "Xóa trắng dữ liệu" (Null Overwrite Disaster)**:
+     - Trong kiến trúc DTO, form giao diện người dùng chỉ gửi lên các trường cần sửa (ví dụ 5 trường trên tổng số 20 cột của bảng).
+     - Khi tạo đối tượng `new Project()` từ DTO, 15 trường còn lại sẽ mang giá trị `null`.
+     - Khi gọi `merge(detached)`, Hibernate sẽ ghi đè giá trị `null` lên toàn bộ 15 cột đó trong CSDL, làm mất sạch dữ liệu ngày tạo, audit log, người khởi tạo,...!
+  2. **Lỗi quan hệ và Cascade Hell (`TransientObjectException`)**:
+     - Entity `Project` liên kết với `Group` và `Set<User> members`. Nếu tạo `new Group(dto.getGroupId())` rỗng rồi gán vào và `merge()`, Hibernate sẽ báo lỗi `TransientPropertyValueException` (đối tượng Group chưa được lưu) hoặc vô tình kích hoạt cascade làm ghi đè hỏng dữ liệu của bảng `PROJECT_GROUP`.
+
+#### Giải pháp 3: Sử dụng Khóa bi quan (Pessimistic Locking - `SELECT ... FOR UPDATE`)
+- **Cách thực hiện**: Đánh dấu `@Lock(LockModeType.PESSIMISTIC_WRITE)` khi truy vấn dự án.
+- **Tại sao KHÔNG THỂ DÙNG cho kiến trúc Web REST API?**:
+  - Khóa bi quan đòi hỏi một Database Connection và một Transaction phải được **giữ mở liên tục** từ lúc người dùng bắt đầu đọc dữ liệu trên màn hình cho đến khi họ bấm submit lưu.
+  - Trong môi trường Web, người dùng có thể mở form rồi đi họp, đi ăn trưa hoặc đóng tab mà không lưu. Việc giữ kết nối CSDL qua nhiều request HTTP sẽ làm cạn kiệt Connection Pool của Database trong tích tắc và gây ra hiện tượng tắc nghẽn (Deadlock) tê liệt toàn bộ hệ thống.
+
+#### Giải pháp 4: Câu lệnh Conditional UPDATE trực tiếp (Direct QueryDSL / JPQL Update)
+- **Cách thực hiện**:
+  ```sql
+  UPDATE Project p 
+  SET p.name = :name, p.status = :status, p.version = p.version + 1 
+  WHERE p.id = :id AND p.version = :dtoVersion
+  ```
+  Kiểm tra số dòng bị ảnh hưởng (`int affectedRows = query.execute()`). Nếu `affectedRows == 0`, chủ động ném `OptimisticLockingFailureException`.
+- **Ưu / Nhược điểm**:
+  - *Ưu điểm*: Thực thi một câu lệnh duy nhất, rất nhanh, không cần nạp Entity vào bộ nhớ.
+  - *Nhược điểm*: Bỏ qua cơ chế Dirty Checking và Lifecycle Callbacks của JPA (`@PreUpdate`, `@Audited`), đồng thời cực kỳ phức tạp và khó khăn khi cần cập nhật các bảng quan hệ nhiều-nhiều (`@ManyToMany members`).
 
 ---
 

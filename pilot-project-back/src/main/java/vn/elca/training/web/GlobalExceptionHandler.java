@@ -2,6 +2,7 @@ package vn.elca.training.web;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.context.MessageSource;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import vn.elca.training.model.exception.ProjectNotFoundException;
 import vn.elca.training.model.exception.ProjectNumberAlreadyException;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -27,17 +29,28 @@ import java.util.UUID;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private final Log logger = LogFactory.getLog(getClass());
+    private final MessageSource messageSource;
+
+    public GlobalExceptionHandler(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
 
     /**
      * 1. Project Not Found -> HTTP 404 Not Found
      */
     @ExceptionHandler(ProjectNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleProjectNotFound(ProjectNotFoundException ex) {
+    public ResponseEntity<ErrorResponseDto> handleProjectNotFound(ProjectNotFoundException ex, Locale locale) {
         logger.warn("Resource not found: " + ex.getMessage());
+        String msg = messageSource.getMessage(
+                "project.not.found",
+                new Object[]{ex.getMessage()},
+                ex.getMessage(),
+                locale
+        );
         ErrorResponseDto error = new ErrorResponseDto(
                 HttpStatus.NOT_FOUND.value(),
                 "RESOURCE_NOT_FOUND",
-                ex.getMessage()
+                msg
         );
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
@@ -46,12 +59,18 @@ public class GlobalExceptionHandler {
      * 2. Project Number Already Exists -> HTTP 400 Bad Request
      */
     @ExceptionHandler(ProjectNumberAlreadyException.class)
-    public ResponseEntity<ErrorResponseDto> handleProjectNumberAlready(ProjectNumberAlreadyException ex) {
+    public ResponseEntity<ErrorResponseDto> handleProjectNumberAlready(ProjectNumberAlreadyException ex, Locale locale) {
         logger.warn("Project number already exists: " + ex.getMessage());
+        String message = messageSource.getMessage(
+                "project.number.already.exists",
+                new Object[]{ex.getProjectNumber()},
+                ex.getMessage(), // Fallback mặc định nếu không tìm thấy key
+                locale
+        );
         ErrorResponseDto error = new ErrorResponseDto(
                 HttpStatus.BAD_REQUEST.value(),
                 "PROJECT_NUMBER_ALREADY_EXISTED",
-                ex.getMessage()
+                message
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
@@ -60,12 +79,18 @@ public class GlobalExceptionHandler {
      * 3. Employee Visa Not Found -> HTTP 400 Bad Request
      */
     @ExceptionHandler(EmployeeVisaNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleEmployeeVisaNotFound(EmployeeVisaNotFoundException ex) {
+    public ResponseEntity<ErrorResponseDto> handleEmployeeVisaNotFound(EmployeeVisaNotFoundException ex, Locale locale) {
         logger.warn("Employee VISA not found: " + ex.getMessage());
+        String message = messageSource.getMessage(
+                "employee.visa.not.found",
+                new Object[]{String.join(", ", ex.getVisas())},
+                ex.getMessage(),
+                locale
+        );
         ErrorResponseDto error = new ErrorResponseDto(
                 HttpStatus.BAD_REQUEST.value(),
                 "EMPLOYEE_VISA_NOT_FOUND",
-                ex.getMessage()
+                message
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
@@ -74,12 +99,18 @@ public class GlobalExceptionHandler {
      * 4. Invalid Project Status For Deletion -> HTTP 400 Bad Request
      */
     @ExceptionHandler(InvalidProjectStatusForDeletionException.class)
-    public ResponseEntity<ErrorResponseDto> handleInvalidProjectStatusForDeletion(InvalidProjectStatusForDeletionException ex) {
+    public ResponseEntity<ErrorResponseDto> handleInvalidProjectStatusForDeletion(InvalidProjectStatusForDeletionException ex, Locale locale) {
         logger.warn("Invalid project status for deletion: " + ex.getMessage());
+        String message = messageSource.getMessage(
+                "project.status.invalid.delete",
+                null,
+                ex.getMessage(),
+                locale
+        );
         ErrorResponseDto error = new ErrorResponseDto(
                 HttpStatus.BAD_REQUEST.value(),
                 "INVALID_PROJECT_STATUS_FOR_DELETION",
-                ex.getMessage()
+                message
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
@@ -88,12 +119,18 @@ public class GlobalExceptionHandler {
      * 5. Optimistic Locking / Concurrent Modification Conflict -> HTTP 409 Conflict
      */
     @ExceptionHandler({OptimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class})
-    public ResponseEntity<ErrorResponseDto> handleOptimisticLockingFailure(Exception ex) {
+    public ResponseEntity<ErrorResponseDto> handleOptimisticLockingFailure(Exception ex, Locale locale) {
         logger.warn("Optimistic locking conflict detected: " + ex.getMessage());
+        String message = messageSource.getMessage(
+                "project.concurrent.conflict",
+                null,
+                "The project was updated or deleted by another transaction. Please refresh the page and try again.",
+                locale
+        );
         ErrorResponseDto error = new ErrorResponseDto(
                 HttpStatus.CONFLICT.value(),
                 "CONCURRENT_UPDATE_CONFLICT",
-                "The project was updated or deleted by another transaction. Please refresh the page and try again."
+                message
         );
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }

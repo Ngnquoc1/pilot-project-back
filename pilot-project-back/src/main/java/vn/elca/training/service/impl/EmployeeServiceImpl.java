@@ -37,4 +37,12 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .map(applicationMapper::employeeToEmployeeDto)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<EmployeeDto> searchEmployees(String term) {
+        return employeeRepository.searchEmployee(term)
+                .stream()
+                .map(applicationMapper::employeeToEmployeeDto)
+                .collect(Collectors.toList());
+    }
 }
