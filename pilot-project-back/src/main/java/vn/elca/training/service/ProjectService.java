@@ -1,25 +1,26 @@
 package vn.elca.training.service;
 
-import vn.elca.training.model.dto.ProjectDto;
-import vn.elca.training.model.entity.Project;
+import vn.elca.training.model.dto.request.ProjectRequestDto;
+import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.ProjectStatus;
 
 import java.util.List;
 
 /**
  * Service interface for Project operations.
+ * Uses ProjectRequestDto for creation/updates and ProjectResponseDto for queries.
  *
- * @author vlp
+ * @author vlp, nnnq
  */
 public interface ProjectService {
 
-    ProjectDto findById(Long id);
+    ProjectResponseDto findById(Long id);
 
-    List<ProjectDto> searchProjects(String keyword, ProjectStatus status);
+    List<ProjectResponseDto> searchProjects(String keyword, ProjectStatus status);
 
-    ProjectDto create(ProjectDto projectDto);
+    ProjectResponseDto create(ProjectRequestDto projectDto);
 
-    ProjectDto update(ProjectDto projectDto, Long id);
+    ProjectResponseDto update(ProjectRequestDto projectDto, Long id);
 
     void delete(List<Long> projectIds);
 

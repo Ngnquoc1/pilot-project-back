@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import vn.elca.training.model.dto.EmployeeDto;
 import vn.elca.training.model.dto.GroupDto;
 import vn.elca.training.model.dto.ProjectDto;
+import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.Employee;
 import vn.elca.training.model.entity.Group;
 import vn.elca.training.model.entity.Project;
@@ -18,11 +19,11 @@ import java.util.stream.Collectors;
 @Component
 public class ApplicationMapper {
 
-    public ProjectDto projectToProjectDto(Project entity) {
+    public ProjectResponseDto projectToProjectResponseDto(Project entity) {
         if (entity == null) {
             return null;
         }
-        ProjectDto dto = new ProjectDto();
+        ProjectResponseDto dto = new ProjectResponseDto();
         dto.setId(entity.getId());
         dto.setProjectNumber(entity.getProjectNumber());
         dto.setName(entity.getName());
@@ -43,12 +44,36 @@ public class ApplicationMapper {
             dto.setMemberVisas(entity.getMembers().stream()
                     .map(Employee::getVisa)
                     .collect(Collectors.toSet()));
+            dto.setMembers(entity.getMembers().stream()
+                    .map(this::employeeToEmployeeDto)
+                    .collect(Collectors.toSet()));
         }
 
         return dto;
     }
 
-    public EmployeeDto employeeToEmployeeDto(Employee entity){
+    public ProjectDto projectToProjectDto(Project entity) {
+        if (entity == null) {
+            return null;
+        }
+        ProjectResponseDto responseDto = projectToProjectResponseDto(entity);
+        ProjectDto dto = new ProjectDto();
+        dto.setId(responseDto.getId());
+        dto.setProjectNumber(responseDto.getProjectNumber());
+        dto.setName(responseDto.getName());
+        dto.setCustomer(responseDto.getCustomer());
+        dto.setStatus(responseDto.getStatus());
+        dto.setStartDate(responseDto.getStartDate());
+        dto.setEndDate(responseDto.getEndDate());
+        dto.setGroupId(responseDto.getGroupId());
+        dto.setGroupLeaderVisa(responseDto.getGroupLeaderVisa());
+        dto.setMemberVisas(responseDto.getMemberVisas());
+        dto.setMembers(responseDto.getMembers());
+        dto.setVersion(responseDto.getVersion());
+        return dto;
+    }
+
+    public EmployeeDto employeeToEmployeeDto(Employee entity) {
         if (entity == null) {
             return null;
         }

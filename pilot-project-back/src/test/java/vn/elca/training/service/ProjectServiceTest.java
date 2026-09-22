@@ -7,7 +7,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import vn.elca.training.model.dto.ProjectDto;
+import vn.elca.training.model.dto.request.ProjectRequestDto;
+import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.Employee;
 import vn.elca.training.model.entity.Group;
 import vn.elca.training.model.entity.Project;
@@ -67,7 +68,7 @@ public class ProjectServiceTest {
 
         when(projectRepository.searchProjects(keyword, status)).thenReturn(List.of(project));
 
-        List<ProjectDto> actualResult = projectService.searchProjects(keyword, status);
+        List<ProjectResponseDto> actualResult = projectService.searchProjects(keyword, status);
 
         assertNotNull(actualResult);
         assertEquals(1, actualResult.size());
@@ -83,7 +84,7 @@ public class ProjectServiceTest {
         Project project = new Project(1001, "EFV Core", "EFV", ProjectStatus.NEW, LocalDate.now(), null, null);
         when(projectRepository.findById(id)).thenReturn(Optional.of(project));
 
-        ProjectDto found = projectService.findById(id);
+        ProjectResponseDto found = projectService.findById(id);
 
         assertNotNull(found);
         assertEquals("EFV Core", found.getName());
@@ -101,7 +102,7 @@ public class ProjectServiceTest {
     @Test
     @DisplayName("Case 4: Create project successfully when data is valid")
     void testCreateProject_Success() {
-        ProjectDto dto = new ProjectDto();
+        ProjectRequestDto dto = new ProjectRequestDto();
         dto.setProjectNumber(1005);
         dto.setName("New Project");
         dto.setCustomer("Customer A");
@@ -122,7 +123,7 @@ public class ProjectServiceTest {
         when(employeeRepository.findByVisaIn(Set.of("ABC"))).thenReturn(List.of(mockEmployee));
         when(projectRepository.saveAndFlush(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        ProjectDto created = projectService.create(dto);
+        ProjectResponseDto created = projectService.create(dto);
 
         assertNotNull(created);
         assertEquals(1005, created.getProjectNumber());
@@ -139,7 +140,7 @@ public class ProjectServiceTest {
     @Test
     @DisplayName("Case 5: Throw ProjectNumberAlreadyException when project number already exists")
     void testCreateProject_WhenProjectNumberAlreadyExists_ShouldThrowException() {
-        ProjectDto dto = new ProjectDto();
+        ProjectRequestDto dto = new ProjectRequestDto();
         dto.setProjectNumber(1001);
 
         doThrow(new ProjectNumberAlreadyException(1001)).when(projectValidator).validateForCreate(dto);
@@ -159,7 +160,7 @@ public class ProjectServiceTest {
         Group mockGroup = new Group();
         mockGroup.setId(2L);
 
-        ProjectDto dto = new ProjectDto();
+        ProjectRequestDto dto = new ProjectRequestDto();
         dto.setName("Updated Name");
         dto.setCustomer("New Customer");
         dto.setStatus(ProjectStatus.INP);
@@ -173,7 +174,7 @@ public class ProjectServiceTest {
         when(groupRepository.findById(2L)).thenReturn(Optional.of(mockGroup));
         when(projectRepository.saveAndFlush(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        ProjectDto updated = projectService.update(dto, id);
+        ProjectResponseDto updated = projectService.update(dto, id);
 
         assertEquals("Updated Name", updated.getName());
         assertEquals("New Customer", updated.getCustomer());
@@ -191,7 +192,7 @@ public class ProjectServiceTest {
     @DisplayName("Case 7: Throw ProjectNotFoundException when updating non-existent project")
     void testUpdateProject_WhenProjectNotFound_ShouldThrowException() {
         Long invalidId = 999L;
-        ProjectDto dto = new ProjectDto();
+        ProjectRequestDto dto = new ProjectRequestDto();
 
         when(projectRepository.findById(invalidId)).thenReturn(Optional.empty());
 
@@ -210,7 +211,7 @@ public class ProjectServiceTest {
         Group mockGroup = new Group();
         mockGroup.setId(1L);
 
-        ProjectDto dto = new ProjectDto();
+        ProjectRequestDto dto = new ProjectRequestDto();
         dto.setName("Concurrent Name");
         dto.setCustomer("Concurrent Customer");
         dto.setGroupId(1L);
@@ -225,7 +226,7 @@ public class ProjectServiceTest {
                 .thenThrow(new ObjectOptimisticLockingFailureException(Project.class, id));
 
         assertThrows(ObjectOptimisticLockingFailureException.class, () -> projectService.update(dto, id));
-        verify(projectRepository).saveAndFlush(existing);
+        verify(projectRepository, never()).save(any());
     }
 
     @Test

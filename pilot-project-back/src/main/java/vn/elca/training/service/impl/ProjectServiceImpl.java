@@ -4,7 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.elca.training.model.dto.ProjectDto;
+import vn.elca.training.model.dto.request.ProjectRequestDto;
+import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.Employee;
 import vn.elca.training.model.entity.Group;
 import vn.elca.training.model.entity.Project;
@@ -24,7 +25,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * @author vlp
+ * Service implementation for Project operations.
+ *
+ * @author vlp, nnnq
  */
 @Service
 @Profile("!dummy | dev")
@@ -51,24 +54,24 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProjectDto findById(Long id) {
+    public ProjectResponseDto findById(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
-        return applicationMapper.projectToProjectDto(project);
+        return applicationMapper.projectToProjectResponseDto(project);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProjectDto> searchProjects(String keyword, ProjectStatus status) {
+    public List<ProjectResponseDto> searchProjects(String keyword, ProjectStatus status) {
         return projectRepository.searchProjects(keyword, status)
                 .stream()
-                .map(applicationMapper::projectToProjectDto)
+                .map(applicationMapper::projectToProjectResponseDto)
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public ProjectDto create(ProjectDto projectDto) throws IllegalArgumentException {
+    public ProjectResponseDto create(ProjectRequestDto projectDto) throws IllegalArgumentException {
         projectValidator.validateForCreate(projectDto);
 
         Project newProject = new Project();
@@ -77,12 +80,12 @@ public class ProjectServiceImpl implements ProjectService {
         mapDtoToEntity(newProject, projectDto);
 
         Project savedProject = projectRepository.saveAndFlush(newProject);
-        return applicationMapper.projectToProjectDto(savedProject);
+        return applicationMapper.projectToProjectResponseDto(savedProject);
     }
 
     @Override
     @Transactional
-    public ProjectDto update(ProjectDto projectDto, Long id) {
+    public ProjectResponseDto update(ProjectRequestDto projectDto, Long id) {
         Project existingProject = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
 
@@ -91,7 +94,7 @@ public class ProjectServiceImpl implements ProjectService {
         mapDtoToEntity(existingProject, projectDto);
 
         Project savedProject = projectRepository.saveAndFlush(existingProject);
-        return applicationMapper.projectToProjectDto(savedProject);
+        return applicationMapper.projectToProjectResponseDto(savedProject);
     }
 
     @Override
@@ -100,10 +103,11 @@ public class ProjectServiceImpl implements ProjectService {
         if (projectIds == null || projectIds.isEmpty()) {
             return;
         }
-        List<Project> projects= projectRepository.findAllById(projectIds);
-        for(Project project:projects){
-            if (project.getStatus() != ProjectStatus.NEW)
+        List<Project> projects = projectRepository.findAllById(projectIds);
+        for (Project project : projects) {
+            if (project.getStatus() != ProjectStatus.NEW) {
                 throw new InvalidProjectStatusForDeletionException("Only projects with status 'NEW' can be deleted.");
+            }
         }
         projectRepository.deleteAll(projects);
     }
@@ -113,7 +117,7 @@ public class ProjectServiceImpl implements ProjectService {
         return projectRepository.count();
     }
 
-    private void mapDtoToEntity(Project project, ProjectDto dto) {
+    private void mapDtoToEntity(Project project, ProjectRequestDto dto) {
         project.setName(dto.getName().trim());
         project.setCustomer(dto.getCustomer().trim());
         project.setStartDate(dto.getStartDate());
@@ -135,6 +139,5 @@ public class ProjectServiceImpl implements ProjectService {
                 project.setMembers(new HashSet<>());
             }
         }
-
     }
 }
