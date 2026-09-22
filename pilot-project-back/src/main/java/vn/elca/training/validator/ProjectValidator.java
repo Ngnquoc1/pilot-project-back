@@ -3,7 +3,6 @@ package vn.elca.training.validator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
-import vn.elca.training.model.dto.ProjectDto;
 import vn.elca.training.model.dto.request.ProjectRequestDto;
 import vn.elca.training.model.entity.Employee;
 import vn.elca.training.model.entity.Project;
@@ -77,10 +76,6 @@ public class ProjectValidator {
         validateCommon(dto.getName(), dto.getCustomer(), dto.getStartDate(), dto.getEndDate(), dto.getGroupId(), dto.getMemberVisas());
     }
 
-    public void validateCommon(ProjectDto dto) {
-        validateCommon(dto.getName(), dto.getCustomer(), dto.getStartDate(), dto.getEndDate(), dto.getGroupId(), dto.getMemberVisas());
-    }
-
     public void validateForCreate(ProjectRequestDto dto) {
         if (dto.getProjectNumber() == null) {
             throw new IllegalArgumentException("Project number is mandatory");
@@ -93,31 +88,7 @@ public class ProjectValidator {
         validateCommon(dto);
     }
 
-    public void validateForCreate(ProjectDto dto) {
-        if (dto.getProjectNumber() == null) {
-            throw new IllegalArgumentException("Project number is mandatory");
-        }
-
-        if (projectRepository.existsByProjectNumber(dto.getProjectNumber())) {
-            throw new ProjectNumberAlreadyException(dto.getProjectNumber());
-        }
-
-        validateCommon(dto);
-    }
-
     public void validateForUpdate(Project existingProject, ProjectRequestDto dto) {
-        if (dto.getProjectNumber() != null && !dto.getProjectNumber().equals(existingProject.getProjectNumber())) {
-            throw new IllegalArgumentException("Project number cannot be changed in edit mode");
-        }
-
-        if (dto.getVersion() != null && !dto.getVersion().equals(existingProject.getVersion())) {
-            throw new ObjectOptimisticLockingFailureException(Project.class, existingProject.getId());
-        }
-
-        validateCommon(dto);
-    }
-
-    public void validateForUpdate(Project existingProject, ProjectDto dto) {
         if (dto.getProjectNumber() != null && !dto.getProjectNumber().equals(existingProject.getProjectNumber())) {
             throw new IllegalArgumentException("Project number cannot be changed in edit mode");
         }

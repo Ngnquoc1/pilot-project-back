@@ -5,7 +5,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import vn.elca.training.model.dto.EmployeeDto;
 import vn.elca.training.model.dto.GroupDto;
-import vn.elca.training.model.dto.ProjectDto;
 import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.Employee;
 import vn.elca.training.model.entity.Group;
@@ -65,45 +64,6 @@ public class ApplicationMapperTest {
         assertEquals(1, dto.getMembers().size());
         assertEquals("DTH", dto.getMembers().iterator().next().getVisa());
         assertEquals("Duc Thinh Ha", dto.getMembers().iterator().next().getFullName());
-    }
-
-    @Test
-    @DisplayName("Test mapping Project Entity to ProjectDto")
-    void testProjectToProjectDto() {
-        Employee leader = new Employee("LEA", "Leader", "One", LocalDate.of(1985, 1, 1));
-        leader.setId(10L);
-
-        Group group = new Group(leader);
-        group.setId(1L);
-
-        Employee member1 = new Employee("DTH", "Duc Thinh", "Ha", LocalDate.of(1990, 1, 1));
-        member1.setId(2L);
-
-        Project project = new Project(
-                1001,
-                "EFV Project",
-                "Customer A",
-                ProjectStatus.NEW,
-                LocalDate.of(2021, 1, 1),
-                LocalDate.of(2021, 12, 31),
-                group
-        );
-        project.setId(100L);
-        project.setVersion(0L);
-        project.setMembers(Set.of(member1));
-
-        ProjectDto dto = mapper.projectToProjectDto(project);
-
-        assertNotNull(dto);
-        assertEquals(100L, dto.getId());
-        assertEquals(1001, dto.getProjectNumber());
-        assertEquals("EFV Project", dto.getName());
-        assertEquals("Customer A", dto.getCustomer());
-        assertEquals(ProjectStatus.NEW, dto.getStatus());
-        assertEquals(1L, dto.getGroupId());
-        assertEquals("LEA", dto.getGroupLeaderVisa());
-        assertEquals(1, dto.getMembers().size());
-        assertEquals("DTH", dto.getMembers().iterator().next().getVisa());
     }
 
     @Test
