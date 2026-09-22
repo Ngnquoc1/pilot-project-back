@@ -62,7 +62,6 @@ public class ApplicationMapperTest {
         assertEquals(ProjectStatus.NEW, dto.getStatus());
         assertEquals(1L, dto.getGroupId());
         assertEquals("LEA", dto.getGroupLeaderVisa());
-        assertTrue(dto.getMemberVisas().contains("DTH"));
         assertEquals(1, dto.getMembers().size());
         assertEquals("DTH", dto.getMembers().iterator().next().getVisa());
         assertEquals("Duc Thinh Ha", dto.getMembers().iterator().next().getFullName());
@@ -103,7 +102,8 @@ public class ApplicationMapperTest {
         assertEquals(ProjectStatus.NEW, dto.getStatus());
         assertEquals(1L, dto.getGroupId());
         assertEquals("LEA", dto.getGroupLeaderVisa());
-        assertTrue(dto.getMemberVisas().contains("DTH"));
+        assertEquals(1, dto.getMembers().size());
+        assertEquals("DTH", dto.getMembers().iterator().next().getVisa());
     }
 
     @Test

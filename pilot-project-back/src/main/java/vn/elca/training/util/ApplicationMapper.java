@@ -41,9 +41,6 @@ public class ApplicationMapper {
         }
 
         if (entity.getMembers() != null) {
-            dto.setMemberVisas(entity.getMembers().stream()
-                    .map(Employee::getVisa)
-                    .collect(Collectors.toSet()));
             dto.setMembers(entity.getMembers().stream()
                     .map(this::employeeToEmployeeDto)
                     .collect(Collectors.toSet()));
@@ -67,7 +64,6 @@ public class ApplicationMapper {
         dto.setEndDate(responseDto.getEndDate());
         dto.setGroupId(responseDto.getGroupId());
         dto.setGroupLeaderVisa(responseDto.getGroupLeaderVisa());
-        dto.setMemberVisas(responseDto.getMemberVisas());
         dto.setMembers(responseDto.getMembers());
         dto.setVersion(responseDto.getVersion());
         return dto;

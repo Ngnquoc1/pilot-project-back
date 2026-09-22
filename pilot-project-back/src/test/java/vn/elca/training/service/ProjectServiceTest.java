@@ -131,7 +131,8 @@ public class ProjectServiceTest {
         assertEquals("Customer A", created.getCustomer());
         assertEquals(ProjectStatus.NEW, created.getStatus());
         assertEquals(1L, created.getGroupId());
-        assertEquals(1, created.getMemberVisas().size());
+        assertEquals(1, created.getMembers().size());
+        assertEquals("ABC", created.getMembers().iterator().next().getVisa());
 
         verify(projectValidator).validateForCreate(dto);
         verify(projectRepository).saveAndFlush(any(Project.class));
@@ -182,7 +183,7 @@ public class ProjectServiceTest {
         assertEquals(LocalDate.of(2021, 2, 1), updated.getStartDate());
         assertEquals(LocalDate.of(2021, 12, 31), updated.getEndDate());
         assertEquals(2L, updated.getGroupId());
-        assertTrue(updated.getMemberVisas().isEmpty());
+        assertTrue(updated.getMembers().isEmpty());
 
         verify(projectValidator).validateForUpdate(existing, dto);
         verify(projectRepository).saveAndFlush(existing);

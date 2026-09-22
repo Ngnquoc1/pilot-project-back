@@ -10,6 +10,7 @@ import java.util.Set;
 /**
  * Response DTO for Project details and listing.
  * Includes complete information including member details (full names) for UI display.
+ * Note: Member visas are cleanly extracted directly from the members collection.
  *
  * @author nnnq
  */
@@ -23,7 +24,6 @@ public class ProjectResponseDto {
     private LocalDate endDate;
     private Long groupId;
     private String groupLeaderVisa;
-    private Set<String> memberVisas = new HashSet<>();
     private Set<EmployeeDto> members = new HashSet<>();
     private Long version;
 
@@ -100,14 +100,6 @@ public class ProjectResponseDto {
 
     public void setGroupLeaderVisa(String groupLeaderVisa) {
         this.groupLeaderVisa = groupLeaderVisa;
-    }
-
-    public Set<String> getMemberVisas() {
-        return memberVisas;
-    }
-
-    public void setMemberVisas(Set<String> memberVisas) {
-        this.memberVisas = memberVisas;
     }
 
     public Set<EmployeeDto> getMembers() {
