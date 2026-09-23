@@ -2,6 +2,7 @@ package vn.elca.training.service;
 
 import org.springframework.data.domain.Pageable;
 import vn.elca.training.model.dto.request.ProjectRequestDto;
+import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
 import vn.elca.training.model.dto.response.PageResponseDto;
 import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.ProjectStatus;
@@ -20,7 +21,7 @@ public interface ProjectService {
 
     List<ProjectResponseDto> searchProjects(String keyword, ProjectStatus status);
 
-    PageResponseDto<ProjectResponseDto> searchProjects(String keyword, ProjectStatus status, Pageable pageable);
+    PageResponseDto<ProjectResponseDto> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable);
 
     ProjectResponseDto create(ProjectRequestDto projectDto);
 

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.elca.training.model.dto.request.ProjectRequestDto;
+import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
 import vn.elca.training.model.dto.response.PageResponseDto;
 import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.Employee;
@@ -74,8 +75,8 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponseDto<ProjectResponseDto> searchProjects(String keyword, ProjectStatus status, Pageable pageable) {
-        Page<Project> pageResult = projectRepository.searchProjects(keyword, status, pageable);
+    public PageResponseDto<ProjectResponseDto> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable) {
+        Page<Project> pageResult = projectRepository.searchProjects(criteria, pageable);
         List<ProjectResponseDto> dtoList = pageResult.getContent().stream()
                 .map(applicationMapper::projectToProjectResponseDto)
                 .collect(Collectors.toList());

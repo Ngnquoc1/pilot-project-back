@@ -10,13 +10,16 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
+import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
 import vn.elca.training.model.entity.Project;
 import vn.elca.training.model.entity.ProjectStatus;
 import vn.elca.training.model.entity.QProject;
 
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
@@ -27,7 +30,8 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
     @Override
     public List<Project> searchProjects(String keyword, ProjectStatus status){
         QProject qProject=QProject.project;
-        BooleanBuilder builder = buildSearchPredicate(qProject,keyword,status);
+        ProjectSearchCriteriaDto criteria= new ProjectSearchCriteriaDto(keyword,status);
+        BooleanBuilder builder = buildSearchPredicate(qProject,criteria);
         return queryFactory.selectFrom(qProject)
                 .leftJoin(qProject.group).fetchJoin()
                 .leftJoin(qProject.members).fetchJoin()
@@ -38,9 +42,9 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
     }
 
     @Override
-    public Page<Project> searchProjects(String keyword, ProjectStatus status, Pageable pageable) {
+    public Page<Project> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable) {
         QProject qProject=QProject.project;
-        BooleanBuilder builder = buildSearchPredicate(qProject,keyword,status);
+        BooleanBuilder builder = buildSearchPredicate(qProject,criteria);
 
         Long total=queryFactory.select(qProject.id.countDistinct())
                 .from(qProject)
@@ -65,11 +69,16 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
         return new PageImpl<>(content, pageable, totalElements);
     }
 
-    private BooleanBuilder buildSearchPredicate(QProject qProject, String keyword, ProjectStatus status) {
+    private BooleanBuilder buildSearchPredicate(QProject qProject, ProjectSearchCriteriaDto criteria) {
         BooleanBuilder builder = new BooleanBuilder();
 
-        if(StringUtils.isNotBlank(keyword)) {
-            String cleanKeyword=keyword.trim();
+        if (criteria == null) {
+            return builder;
+        }
+
+        //Keyword
+        if(StringUtils.isNotBlank(criteria.getKeyword())) {
+            String cleanKeyword=criteria.getKeyword().trim();
             BooleanBuilder keywordBuilder=new BooleanBuilder();
             keywordBuilder.or(qProject.name.containsIgnoreCase(cleanKeyword));
             keywordBuilder.or(qProject.customer.containsIgnoreCase(cleanKeyword));
@@ -83,8 +92,45 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
             builder.and(keywordBuilder);
         }
 
-        if(status!=null) {
-            builder.and(qProject.status.eq(status));
+        //Status
+        if(criteria.getStatus()!=null) {
+            builder.and(qProject.status.eq(criteria.getStatus()));
+        }
+
+        //Project Leader VISA
+        if(StringUtils.isNotBlank(criteria.getGroupLeaderVisa())) {
+            builder.and(qProject.group.groupLeader.visa.equalsIgnoreCase(criteria.getGroupLeaderVisa().trim()));
+        }
+
+        // Member Visa
+        if (criteria.getMemberVisas() != null && !criteria.getMemberVisas().isEmpty()) {
+            Set<String> visas = criteria.getMemberVisas();
+
+            BooleanBuilder memberBuilder = new BooleanBuilder();
+            for (String v : visas) {
+                if (StringUtils.isNotBlank(v)) {
+                    memberBuilder.or(qProject.members.any().visa.equalsIgnoreCase(v.trim()));
+                }
+            }
+            if (memberBuilder.hasValue()) {
+                builder.and(memberBuilder);
+            }
+        }
+
+        //StartDate
+        if (criteria.getStartDateFrom() != null) {
+            builder.and(qProject.startDate.goe(criteria.getStartDateFrom())); // goe: Greater or Equal
+        }
+        if (criteria.getStartDateTo() != null) {
+            builder.and(qProject.startDate.loe(criteria.getStartDateTo()));   // loe: Less or Equal
+        }
+
+        //EndDate
+        if (criteria.getEndDateFrom() != null) {
+            builder.and(qProject.endDate.isNotNull().and(qProject.endDate.goe(criteria.getEndDateFrom())));
+        }
+        if (criteria.getEndDateTo() != null) {
+            builder.and(qProject.endDate.isNotNull().and(qProject.endDate.loe(criteria.getEndDateTo())));
         }
         return builder;
     }

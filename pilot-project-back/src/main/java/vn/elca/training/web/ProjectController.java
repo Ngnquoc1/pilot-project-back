@@ -8,6 +8,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import vn.elca.training.model.dto.request.ProjectRequestDto;
+import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
 import vn.elca.training.model.dto.response.PageResponseDto;
 import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.ProjectStatus;
@@ -33,10 +34,9 @@ public class ProjectController extends AbstractApplicationController {
 
     @GetMapping("/search")
     public PageResponseDto<ProjectResponseDto> search(
-            @RequestParam(value = "keyword", defaultValue = "") String keyword,
-            @RequestParam(value = "status", required = false) ProjectStatus status,
+            ProjectSearchCriteriaDto criteria,
             @PageableDefault(page = 0, size = 5, sort = "projectNumber", direction = Sort.Direction.ASC) Pageable pageable) {
-        return projectService.searchProjects(keyword, status, pageable);
+        return projectService.searchProjects(criteria, pageable);
     }
 
     @GetMapping("/{id}")
