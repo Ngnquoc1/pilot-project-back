@@ -2,9 +2,12 @@ package vn.elca.training.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.elca.training.model.dto.request.ProjectRequestDto;
+import vn.elca.training.model.dto.response.PageResponseDto;
 import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.Employee;
 import vn.elca.training.model.entity.Group;
@@ -67,6 +70,23 @@ public class ProjectServiceImpl implements ProjectService {
                 .stream()
                 .map(applicationMapper::projectToProjectResponseDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponseDto<ProjectResponseDto> searchProjects(String keyword, ProjectStatus status, Pageable pageable) {
+        Page<Project> pageResult = projectRepository.searchProjects(keyword, status, pageable);
+        List<ProjectResponseDto> dtoList = pageResult.getContent().stream()
+                .map(applicationMapper::projectToProjectResponseDto)
+                .collect(Collectors.toList());
+
+        return new PageResponseDto<>(
+                dtoList,
+                pageResult.getNumber(),
+                pageResult.getSize(),
+                pageResult.getTotalElements(),
+                pageResult.getTotalPages()
+        );
     }
 
     @Override

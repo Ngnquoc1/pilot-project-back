@@ -64,7 +64,7 @@ public class GlobalExceptionHandler {
         String message = messageSource.getMessage(
                 "project.number.already.exists",
                 new Object[]{ex.getProjectNumber()},
-                ex.getMessage(), // Fallback mặc định nếu không tìm thấy key
+                ex.getMessage(), // Default fallback if key not found
                 locale
         );
         ErrorResponseDto error = new ErrorResponseDto(

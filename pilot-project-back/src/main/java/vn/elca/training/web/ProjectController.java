@@ -2,9 +2,13 @@ package vn.elca.training.web;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import vn.elca.training.model.dto.request.ProjectRequestDto;
+import vn.elca.training.model.dto.response.PageResponseDto;
 import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.ProjectStatus;
 import vn.elca.training.service.ProjectService;
@@ -28,10 +32,11 @@ public class ProjectController extends AbstractApplicationController {
     }
 
     @GetMapping("/search")
-    public List<ProjectResponseDto> search(
+    public PageResponseDto<ProjectResponseDto> search(
             @RequestParam(value = "keyword", defaultValue = "") String keyword,
-            @RequestParam(value = "status", required = false) ProjectStatus status) {
-        return projectService.searchProjects(keyword, status);
+            @RequestParam(value = "status", required = false) ProjectStatus status,
+            @PageableDefault(page = 0, size = 5, sort = "projectNumber", direction = Sort.Direction.ASC) Pageable pageable) {
+        return projectService.searchProjects(keyword, status, pageable);
     }
 
     @GetMapping("/{id}")

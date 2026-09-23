@@ -136,7 +136,7 @@ public class ProjectRepositoryTest {
 
     @Test
     public void testSearchProjects_ByProjectNumber() {
-        // Tìm theo số dự án "1004"
+        // Search by project number "1004"
         List<Project> results = projectRepository.searchProjects("1004", null);
         Assert.assertEquals(1, results.size());
         Assert.assertEquals(Integer.valueOf(1004), results.get(0).getProjectNumber());
@@ -146,18 +146,18 @@ public class ProjectRepositoryTest {
     public void testSearchProjects_ByStatusOnly() {
 
         List<Project> results = projectRepository.searchProjects(null, ProjectStatus.NEW);
-        Assert.assertEquals(2, results.size());
+        Assert.assertEquals(5, results.size());
         Assert.assertTrue(results.stream().allMatch(p -> p.getStatus() == ProjectStatus.NEW));
 
         Assert.assertEquals(Integer.valueOf(1001), results.get(0).getProjectNumber());
-        Assert.assertEquals(Integer.valueOf(1005), results.get(1).getProjectNumber());
+        Assert.assertEquals(Integer.valueOf(1014), results.get(4).getProjectNumber());
     }
 
     @Test
     public void testSearchProjects_EmptyCriteria_ShouldReturnAllSortedAsc() {
         List<Project> results = projectRepository.searchProjects("", null);
-        Assert.assertEquals(5, results.size());
+        Assert.assertEquals(15, results.size());
         Assert.assertEquals(Integer.valueOf(1001), results.get(0).getProjectNumber());
-        Assert.assertEquals(Integer.valueOf(1005), results.get(4).getProjectNumber());
+        Assert.assertEquals(Integer.valueOf(1015), results.get(14).getProjectNumber());
     }
 }

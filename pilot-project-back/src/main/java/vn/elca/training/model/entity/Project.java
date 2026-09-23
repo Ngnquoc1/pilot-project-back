@@ -1,5 +1,7 @@
 package vn.elca.training.model.entity;
 
+import org.hibernate.annotations.BatchSize;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -46,6 +48,7 @@ public class Project extends AbstractEntity {
     @JoinColumn(name = "GROUP_ID", nullable = false)
     private Group group;
 
+    @BatchSize(size=50)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "PROJECT_EMPLOYEE",
