@@ -13,10 +13,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import vn.elca.training.model.dto.ErrorResponseDto;
 import vn.elca.training.model.exception.ApplicationUnexpectedException;
-import vn.elca.training.model.exception.EmployeeVisaNotFoundException;
-import vn.elca.training.model.exception.InvalidProjectStatusForDeletionException;
-import vn.elca.training.model.exception.ProjectNotFoundException;
-import vn.elca.training.model.exception.ProjectNumberAlreadyException;
+import vn.elca.training.model.exception.BaseBusinessException;
+import vn.elca.training.model.exception.ErrorCode;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -36,87 +34,34 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 1. Project Not Found -> HTTP 404 Not Found
+     * Unified handler for all domain business exceptions extending BaseBusinessException.
+     * (ProjectNotFoundException, ProjectNumberAlreadyException, EmployeeVisaNotFoundException,
+     *  InvalidProjectStatusForDeletionException, etc.)
      */
-    @ExceptionHandler(ProjectNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleProjectNotFound(ProjectNotFoundException ex, Locale locale) {
-        logger.warn("Resource not found: " + ex.getMessage());
-        String msg = messageSource.getMessage(
-                "project.not.found",
-                new Object[]{ex.getMessage()},
-                ex.getMessage(),
-                locale
-        );
+    @ExceptionHandler(BaseBusinessException.class)
+    public ResponseEntity<ErrorResponseDto> handleBaseBusinessException(BaseBusinessException ex, Locale locale) {
+        logger.warn(String.format("Business exception [%s]: %s", ex.getErrorKey(), ex.getMessage()));
+
+        String localizedMessage = ex.getMessage();
+        if (ex.getMessageKey() != null) {
+            localizedMessage = messageSource.getMessage(
+                    ex.getMessageKey(),
+                    ex.getMessageArgs(),
+                    ex.getMessage(), // Fallback if key not found
+                    locale
+            );
+        }
+
         ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.NOT_FOUND.value(),
-                "RESOURCE_NOT_FOUND",
-                msg
+                ex.getHttpStatus().value(),
+                ex.getErrorKey(),
+                localizedMessage
         );
-        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(error, ex.getHttpStatus());
     }
 
     /**
-     * 2. Project Number Already Exists -> HTTP 400 Bad Request
-     */
-    @ExceptionHandler(ProjectNumberAlreadyException.class)
-    public ResponseEntity<ErrorResponseDto> handleProjectNumberAlready(ProjectNumberAlreadyException ex, Locale locale) {
-        logger.warn("Project number already exists: " + ex.getMessage());
-        String message = messageSource.getMessage(
-                "project.number.already.exists",
-                new Object[]{ex.getProjectNumber()},
-                ex.getMessage(), // Default fallback if key not found
-                locale
-        );
-        ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.BAD_REQUEST.value(),
-                "PROJECT_NUMBER_ALREADY_EXISTED",
-                message
-        );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
-
-    /**
-     * 3. Employee Visa Not Found -> HTTP 400 Bad Request
-     */
-    @ExceptionHandler(EmployeeVisaNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleEmployeeVisaNotFound(EmployeeVisaNotFoundException ex, Locale locale) {
-        logger.warn("Employee VISA not found: " + ex.getMessage());
-        String message = messageSource.getMessage(
-                "employee.visa.not.found",
-                new Object[]{String.join(", ", ex.getVisas())},
-                ex.getMessage(),
-                locale
-        );
-        ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.BAD_REQUEST.value(),
-                "EMPLOYEE_VISA_NOT_FOUND",
-                message
-        );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
-
-    /**
-     * 4. Invalid Project Status For Deletion -> HTTP 400 Bad Request
-     */
-    @ExceptionHandler(InvalidProjectStatusForDeletionException.class)
-    public ResponseEntity<ErrorResponseDto> handleInvalidProjectStatusForDeletion(InvalidProjectStatusForDeletionException ex, Locale locale) {
-        logger.warn("Invalid project status for deletion: " + ex.getMessage());
-        String message = messageSource.getMessage(
-                "project.status.invalid.delete",
-                null,
-                ex.getMessage(),
-                locale
-        );
-        ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.BAD_REQUEST.value(),
-                "INVALID_PROJECT_STATUS_FOR_DELETION",
-                message
-        );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-    }
-
-    /**
-     * 5. Optimistic Locking / Concurrent Modification Conflict -> HTTP 409 Conflict
+     * 2. Optimistic Locking / Concurrent Modification Conflict -> HTTP 409 Conflict
      */
     @ExceptionHandler({OptimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class})
     public ResponseEntity<ErrorResponseDto> handleOptimisticLockingFailure(Exception ex, Locale locale) {
@@ -128,43 +73,43 @@ public class GlobalExceptionHandler {
                 locale
         );
         ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.CONFLICT.value(),
-                "CONCURRENT_UPDATE_CONFLICT",
+                ErrorCode.CONCURRENT_UPDATE_CONFLICT.getHttpStatus().value(),
+                ErrorCode.CONCURRENT_UPDATE_CONFLICT.getCode(),
                 message
         );
-        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+        return new ResponseEntity<>(error, ErrorCode.CONCURRENT_UPDATE_CONFLICT.getHttpStatus());
     }
 
     /**
-     * 6. Illegal Argument (Business rule validation) -> HTTP 400 Bad Request
+     * 3. Illegal Argument (Business rule validation) -> HTTP 400 Bad Request
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex) {
         logger.warn("Illegal argument in request: " + ex.getMessage());
         ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.BAD_REQUEST.value(),
-                "INVALID_ARGUMENT",
+                ErrorCode.INVALID_ARGUMENT.getHttpStatus().value(),
+                ErrorCode.INVALID_ARGUMENT.getCode(),
                 ex.getMessage()
         );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(error, ErrorCode.INVALID_ARGUMENT.getHttpStatus());
     }
 
     /**
-     * 7. Illegal State -> HTTP 400 Bad Request
+     * 4. Illegal State -> HTTP 400 Bad Request
      */
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponseDto> handleIllegalState(IllegalStateException ex) {
         logger.warn("Illegal state in request: " + ex.getMessage());
         ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.BAD_REQUEST.value(),
-                "ILLEGAL_STATE",
+                ErrorCode.ILLEGAL_STATE.getHttpStatus().value(),
+                ErrorCode.ILLEGAL_STATE.getCode(),
                 ex.getMessage()
         );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(error, ErrorCode.ILLEGAL_STATE.getHttpStatus());
     }
 
     /**
-     * 8. Bean Validation @Valid -> HTTP 400 Bad Request
+     * 5. Bean Validation @Valid -> HTTP 400 Bad Request
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDto> handleValidationExceptions(MethodArgumentNotValidException ex) {
@@ -174,41 +119,41 @@ public class GlobalExceptionHandler {
         }
         logger.warn("Validation failed for request: " + fieldErrors);
         ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.BAD_REQUEST.value(),
-                "VALIDATION_FAILED",
+                ErrorCode.VALIDATION_FAILED.getHttpStatus().value(),
+                ErrorCode.VALIDATION_FAILED.getCode(),
                 "Request validation failed",
                 fieldErrors
         );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(error, ErrorCode.VALIDATION_FAILED.getHttpStatus());
     }
 
     /**
-     * 9. Application Unexpected Error -> HTTP 500 Internal Server Error
+     * 6. Application Unexpected Error -> HTTP 500 Internal Server Error
      */
     @ExceptionHandler(ApplicationUnexpectedException.class)
     public ResponseEntity<ErrorResponseDto> handleApplicationUnexpected(ApplicationUnexpectedException ex) {
         String errorId = UUID.randomUUID().toString();
         logger.error(String.format("Application unexpected error [ErrorId: %s]", errorId), ex);
         ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "INTERNAL_SERVER_ERROR",
+                ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus().value(),
+                ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
                 String.format("An unexpected system error occurred (Error ID: %s).", errorId)
         );
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(error, ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus());
     }
 
     /**
-     * 10. Fallback for All Other Unhandled Errors -> HTTP 500 Internal Server Error
+     * 7. Fallback for All Other Unhandled Errors -> HTTP 500 Internal Server Error
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGeneralException(Exception ex) {
         String errorId = UUID.randomUUID().toString();
         logger.error(String.format("Unhandled server error [ErrorId: %s]", errorId), ex);
         ErrorResponseDto error = new ErrorResponseDto(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "INTERNAL_SERVER_ERROR",
+                ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus().value(),
+                ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
                 String.format("An internal server error occurred (Error ID: %s). Please contact administrator.", errorId)
         );
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(error, ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus());
     }
 }

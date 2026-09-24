@@ -1,12 +1,21 @@
 package vn.elca.training.model.exception;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
 import java.util.Set;
 
-public class EmployeeVisaNotFoundException extends RuntimeException {
+@ResponseStatus(HttpStatus.BAD_REQUEST)
+public class EmployeeVisaNotFoundException extends BaseBusinessException {
+
     private final Set<String> visas;
 
     public EmployeeVisaNotFoundException(Set<String> visas) {
-        super("The following visas do not exist: " + visas);
+        super(
+                ErrorCode.EMPLOYEE_VISA_NOT_FOUND,
+                new Object[]{visas != null ? String.join(", ", visas) : ""},
+                "The following visas do not exist: " + visas
+        );
         this.visas = visas;
     }
 

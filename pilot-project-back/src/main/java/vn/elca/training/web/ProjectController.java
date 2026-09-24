@@ -16,12 +16,6 @@ import vn.elca.training.service.ProjectService;
 
 import java.util.List;
 
-/**
- * REST controller for Project operations.
- * Separates input payloads (ProjectRequestDto) from output responses (ProjectResponseDto).
- *
- * @author gtn, nnnq
- */
 @RestController
 @RequestMapping("/projects")
 public class ProjectController extends AbstractApplicationController {

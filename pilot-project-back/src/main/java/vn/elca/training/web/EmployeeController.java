@@ -10,11 +10,6 @@ import vn.elca.training.service.EmployeeService;
 
 import java.util.List;
 
-/**
- * REST controller for Employee operations.
- *
- * @author nnnq
- */
 @RestController
 @RequestMapping("/employees")
 public class EmployeeController extends AbstractApplicationController {
