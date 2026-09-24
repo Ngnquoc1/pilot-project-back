@@ -160,4 +160,16 @@ public class ProjectRepositoryTest {
         Assert.assertEquals(Integer.valueOf(1001), results.get(0).getProjectNumber());
         Assert.assertEquals(Integer.valueOf(1015), results.get(14).getProjectNumber());
     }
+
+    @Test
+    public void testSearchProjects_WithCriteriaAndPagination() {
+        org.springframework.data.domain.Page<Project> page = projectRepository.searchProjects(
+                new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto(),
+                org.springframework.data.domain.PageRequest.of(0, 10)
+        );
+        Assert.assertNotNull(page);
+        Assert.assertEquals(10, page.getContent().size());
+        // Verify groupLeader is loaded without extra query
+        Assert.assertNotNull(page.getContent().get(0).getGroup().getGroupLeader());
+    }
 }

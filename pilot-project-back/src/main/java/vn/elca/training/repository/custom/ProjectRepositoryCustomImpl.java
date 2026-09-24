@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
 import vn.elca.training.model.entity.Project;
 import vn.elca.training.model.entity.ProjectStatus;
+import vn.elca.training.model.entity.QGroup;
 import vn.elca.training.model.entity.QProject;
 
 
@@ -56,9 +57,11 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
             return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
 
+        QGroup qGroup = QGroup.group;
         List<Project> content = queryFactory
                 .selectFrom(qProject)
-                .leftJoin(qProject.group).fetchJoin() // Safe To-One fetch join with limit/offset
+                .leftJoin(qProject.group, qGroup).fetchJoin()
+                .leftJoin(qGroup.groupLeader).fetchJoin()
                 .where(builder)
                 .orderBy(getOrderSpecifier(qProject, pageable.getSort()))
                 .offset(pageable.getOffset())
@@ -87,7 +90,6 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
                 int number = Integer.parseInt(cleanKeyword);
                 keywordBuilder.or(qProject.projectNumber.eq(number));
             } catch (NumberFormatException ignored) {
-
             }
             builder.and(keywordBuilder);
         }

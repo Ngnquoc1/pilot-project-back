@@ -16,6 +16,8 @@ import vn.elca.training.model.entity.Project;
 import vn.elca.training.model.entity.ProjectStatus;
 import vn.elca.training.model.exception.InvalidProjectStatusForDeletionException;
 import vn.elca.training.model.exception.ProjectNotFoundException;
+import vn.elca.training.model.exception.ProjectNumberAlreadyException;
+import org.springframework.dao.DataIntegrityViolationException;
 import vn.elca.training.repository.EmployeeRepository;
 import vn.elca.training.repository.GroupRepository;
 import vn.elca.training.repository.ProjectRepository;
@@ -100,8 +102,12 @@ public class ProjectServiceImpl implements ProjectService {
 
         mapDtoToEntity(newProject, projectDto);
 
-        Project savedProject = projectRepository.saveAndFlush(newProject);
-        return applicationMapper.projectToProjectResponseDto(savedProject);
+        try {
+            Project savedProject = projectRepository.saveAndFlush(newProject);
+            return applicationMapper.projectToProjectResponseDto(savedProject);
+        } catch (DataIntegrityViolationException ex) {
+            throw new ProjectNumberAlreadyException(projectDto.getProjectNumber(), ex);
+        }
     }
 
     @Override
