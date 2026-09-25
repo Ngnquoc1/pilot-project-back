@@ -6,19 +6,21 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.elca.training.model.dto.request.ProjectRequestDto;
 import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
 import vn.elca.training.model.dto.response.PageResponseDto;
+import vn.elca.training.model.dto.response.ProjectDeleteResponseDto;
 import vn.elca.training.model.dto.response.ProjectResponseDto;
-import vn.elca.training.model.entity.ProjectStatus;
+import vn.elca.training.model.dto.response.ProjectSearchResultDto;
 import vn.elca.training.service.ProjectService;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/projects")
-public class ProjectController extends AbstractApplicationController {
+public class ProjectController {
     private final ProjectService projectService;
 
     @Autowired
@@ -27,7 +29,7 @@ public class ProjectController extends AbstractApplicationController {
     }
 
     @GetMapping("/search")
-    public PageResponseDto<ProjectResponseDto> search(
+    public PageResponseDto<ProjectSearchResultDto> search(
             ProjectSearchCriteriaDto criteria,
             @PageableDefault(page = 0, size = 5, sort = "projectNumber", direction = Sort.Direction.ASC) Pageable pageable) {
         return projectService.searchProjects(criteria, pageable);
@@ -51,8 +53,8 @@ public class ProjectController extends AbstractApplicationController {
     }
 
     @DeleteMapping()
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@RequestBody List<Long> projectIds) {
-        projectService.delete(projectIds);
+    public ResponseEntity<ProjectDeleteResponseDto> delete(@RequestBody List<Long> projectIds) {
+        ProjectDeleteResponseDto response = projectService.delete(projectIds);
+        return ResponseEntity.ok(response);
     }
 }

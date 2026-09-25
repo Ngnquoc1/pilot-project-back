@@ -34,7 +34,7 @@ public abstract class BaseBusinessException extends RuntimeException {
     }
 
     public String getErrorKey() {
-        return errorCode.getCode();
+        return errorCode.name();
     }
 
     public String getMessageKey() {

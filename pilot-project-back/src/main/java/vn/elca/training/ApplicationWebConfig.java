@@ -12,7 +12,6 @@ import org.springframework.context.annotation.PropertySource;
 import vn.elca.training.service.ProjectService;
 import vn.elca.training.util.ApplicationMapper;
 import vn.elca.training.validator.ProjectValidator;
-import vn.elca.training.web.AbstractApplicationController;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -23,7 +22,6 @@ import javax.persistence.PersistenceContext;
  */
 @SpringBootApplication(scanBasePackages = "vn.elca.training")
 @ComponentScan(basePackageClasses = {
-        AbstractApplicationController.class,
         ApplicationMapper.class,
         ProjectService.class,
         ProjectValidator.class

@@ -10,10 +10,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
+import com.querydsl.core.types.Projections;
 import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
+import vn.elca.training.model.dto.response.ProjectSearchResultDto;
 import vn.elca.training.model.entity.Project;
 import vn.elca.training.model.entity.ProjectStatus;
-import vn.elca.training.model.entity.QGroup;
 import vn.elca.training.model.entity.QProject;
 
 
@@ -29,44 +30,47 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
     private JPAQueryFactory queryFactory;
 
     @Override
-    public List<Project> searchProjects(String keyword, ProjectStatus status){
-        QProject qProject=QProject.project;
-        ProjectSearchCriteriaDto criteria= new ProjectSearchCriteriaDto(keyword,status);
-        BooleanBuilder builder = buildSearchPredicate(qProject,criteria);
+    public List<Project> searchProjects(String keyword, ProjectStatus status) {
+        QProject qProject = QProject.project;
+        ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto(keyword, status);
+        BooleanBuilder builder = buildSearchPredicate(qProject, criteria);
         return queryFactory.selectFrom(qProject)
-                .leftJoin(qProject.group).fetchJoin()
-                .leftJoin(qProject.members).fetchJoin()
                 .where(builder)
                 .orderBy(qProject.projectNumber.asc())
-                .distinct()
                 .fetch();
     }
 
     @Override
-    public Page<Project> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable) {
-        QProject qProject=QProject.project;
-        BooleanBuilder builder = buildSearchPredicate(qProject,criteria);
+    public Page<ProjectSearchResultDto> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable) {
+        QProject qProject = QProject.project;
+        BooleanBuilder builder = buildSearchPredicate(qProject, criteria);
 
-        Long total=queryFactory.select(qProject.id.countDistinct())
+        Long total = queryFactory.select(qProject.id.countDistinct())
                 .from(qProject)
                 .where(builder)
                 .fetchOne();
-        long totalElements= total != null ? total : 0L;
+        long totalElements = total != null ? total : 0L;
 
         if (totalElements == 0) {
             return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
 
-        QGroup qGroup = QGroup.group;
-        List<Project> content = queryFactory
-                .selectFrom(qProject)
-                .leftJoin(qProject.group, qGroup).fetchJoin()
-                .leftJoin(qGroup.groupLeader).fetchJoin()
+        List<ProjectSearchResultDto> content = queryFactory
+                .select(Projections.constructor(
+                        ProjectSearchResultDto.class,
+                        qProject.id,
+                        qProject.projectNumber,
+                        qProject.name,
+                        qProject.customer,
+                        qProject.status,
+                        qProject.startDate,
+                        qProject.version
+                ))
+                .from(qProject)
                 .where(builder)
                 .orderBy(getOrderSpecifier(qProject, pageable.getSort()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .distinct()
                 .fetch();
 
         return new PageImpl<>(content, pageable, totalElements);

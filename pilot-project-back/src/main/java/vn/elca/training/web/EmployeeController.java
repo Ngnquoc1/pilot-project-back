@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/employees")
-public class EmployeeController extends AbstractApplicationController {
+public class EmployeeController {
 
     private final EmployeeService employeeService;
 

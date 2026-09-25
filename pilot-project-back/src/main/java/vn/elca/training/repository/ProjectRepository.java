@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository;
 import vn.elca.training.model.entity.Project;
 import vn.elca.training.repository.custom.ProjectRepositoryCustom;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -21,13 +20,5 @@ public interface ProjectRepository extends JpaRepository<Project, Long>, Queryds
     @EntityGraph(attributePaths = {"group", "group.groupLeader", "members"})
     Optional<Project> findById(Long id);
 
-    Optional<Project> findByProjectNumber(Integer projectNumber);
-
     boolean existsByProjectNumber(Integer projectNumber);
-
-    boolean existsByProjectNumberAndIdNot(Integer projectNumber, Long id);
-
-    List<Project> findByNameContainsIgnoreCase(String name);
-
-    List<Project> findProjectByNameContainsIgnoreCase(String name);
 }

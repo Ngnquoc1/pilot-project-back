@@ -33,11 +33,6 @@ public class GlobalExceptionHandler {
         this.messageSource = messageSource;
     }
 
-    /**
-     * Unified handler for all domain business exceptions extending BaseBusinessException.
-     * (ProjectNotFoundException, ProjectNumberAlreadyException, EmployeeVisaNotFoundException,
-     *  InvalidProjectStatusForDeletionException, etc.)
-     */
     @ExceptionHandler(BaseBusinessException.class)
     public ResponseEntity<ErrorResponseDto> handleBaseBusinessException(BaseBusinessException ex, Locale locale) {
         logger.warn(String.format("Business exception [%s]: %s", ex.getErrorKey(), ex.getMessage()));
@@ -54,7 +49,6 @@ public class GlobalExceptionHandler {
 
         ErrorResponseDto error = new ErrorResponseDto(
                 ex.getHttpStatus().value(),
-                ex.getErrorKey(),
                 localizedMessage
         );
         return new ResponseEntity<>(error, ex.getHttpStatus());
@@ -74,7 +68,6 @@ public class GlobalExceptionHandler {
         );
         ErrorResponseDto error = new ErrorResponseDto(
                 ErrorCode.CONCURRENT_UPDATE_CONFLICT.getHttpStatus().value(),
-                ErrorCode.CONCURRENT_UPDATE_CONFLICT.getCode(),
                 message
         );
         return new ResponseEntity<>(error, ErrorCode.CONCURRENT_UPDATE_CONFLICT.getHttpStatus());
@@ -88,7 +81,6 @@ public class GlobalExceptionHandler {
         logger.warn("Illegal argument in request: " + ex.getMessage());
         ErrorResponseDto error = new ErrorResponseDto(
                 ErrorCode.INVALID_ARGUMENT.getHttpStatus().value(),
-                ErrorCode.INVALID_ARGUMENT.getCode(),
                 ex.getMessage()
         );
         return new ResponseEntity<>(error, ErrorCode.INVALID_ARGUMENT.getHttpStatus());
@@ -102,7 +94,6 @@ public class GlobalExceptionHandler {
         logger.warn("Illegal state in request: " + ex.getMessage());
         ErrorResponseDto error = new ErrorResponseDto(
                 ErrorCode.ILLEGAL_STATE.getHttpStatus().value(),
-                ErrorCode.ILLEGAL_STATE.getCode(),
                 ex.getMessage()
         );
         return new ResponseEntity<>(error, ErrorCode.ILLEGAL_STATE.getHttpStatus());
@@ -120,7 +111,6 @@ public class GlobalExceptionHandler {
         logger.warn("Validation failed for request: " + fieldErrors);
         ErrorResponseDto error = new ErrorResponseDto(
                 ErrorCode.VALIDATION_FAILED.getHttpStatus().value(),
-                ErrorCode.VALIDATION_FAILED.getCode(),
                 "Request validation failed",
                 fieldErrors
         );
@@ -136,7 +126,6 @@ public class GlobalExceptionHandler {
         logger.error(String.format("Application unexpected error [ErrorId: %s]", errorId), ex);
         ErrorResponseDto error = new ErrorResponseDto(
                 ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus().value(),
-                ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
                 String.format("An unexpected system error occurred (Error ID: %s).", errorId)
         );
         return new ResponseEntity<>(error, ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus());
@@ -151,7 +140,6 @@ public class GlobalExceptionHandler {
         logger.error(String.format("Unhandled server error [ErrorId: %s]", errorId), ex);
         ErrorResponseDto error = new ErrorResponseDto(
                 ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus().value(),
-                ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
                 String.format("An internal server error occurred (Error ID: %s). Please contact administrator.", errorId)
         );
         return new ResponseEntity<>(error, ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus());

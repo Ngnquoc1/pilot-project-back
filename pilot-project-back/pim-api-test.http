@@ -182,12 +182,26 @@ Content-Type: application/json
 ### --------------------------------------------------------------------------
 ### 13. HAPPY PATH: Delete valid projects (status = 'NEW')
 ### Project ID 5 (TRADEECO) has status = 'NEW'
-### Expected: 204 No Content
+### Expected: 200 OK with ProjectDeleteResponseDto detail (empty notFoundIds)
 ### --------------------------------------------------------------------------
 DELETE {{baseUrl}}/projects
 Content-Type: application/json
 
 [5]
+
+### --------------------------------------------------------------------------
+### 13b. TRANSPARENT PATH: Delete projects with some non-existent IDs
+### ID 5 exists, but ID 9999 does not exist in DB
+### Breakpoint locations:
+###   - ProjectServiceImpl.java: delete()
+###     -> Line 146: inspect 'foundIds'
+###     -> Line 148: inspect 'notFoundIds'
+### Expected: 200 OK, notFoundIds contains [9999], deletedCount = 1
+### --------------------------------------------------------------------------
+DELETE {{baseUrl}}/projects
+Content-Type: application/json
+
+[5, 9999]
 
 ### --------------------------------------------------------------------------
 ### 14. ERROR 409: Optimistic Locking Conflict (Concurrent Update)

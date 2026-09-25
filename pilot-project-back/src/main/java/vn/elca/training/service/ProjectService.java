@@ -4,7 +4,9 @@ import org.springframework.data.domain.Pageable;
 import vn.elca.training.model.dto.request.ProjectRequestDto;
 import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
 import vn.elca.training.model.dto.response.PageResponseDto;
+import vn.elca.training.model.dto.response.ProjectDeleteResponseDto;
 import vn.elca.training.model.dto.response.ProjectResponseDto;
+import vn.elca.training.model.dto.response.ProjectSearchResultDto;
 import vn.elca.training.model.entity.ProjectStatus;
 
 import java.util.List;
@@ -21,13 +23,13 @@ public interface ProjectService {
 
     List<ProjectResponseDto> searchProjects(String keyword, ProjectStatus status);
 
-    PageResponseDto<ProjectResponseDto> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable);
+    PageResponseDto<ProjectSearchResultDto> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable);
 
     ProjectResponseDto create(ProjectRequestDto projectDto);
 
     ProjectResponseDto update(ProjectRequestDto projectDto, Long id);
 
-    void delete(List<Long> projectIds);
+    ProjectDeleteResponseDto delete(List<Long> projectIds);
 
     long count();
 }

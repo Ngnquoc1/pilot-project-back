@@ -1,47 +1,809 @@
 {
 	"info": {
 		"_postman_id": "776956c5-de25-41fe-97f6-43dbc582eb6c",
-		"name": "pimtool",
+		"name": "PIM Tool API Test Suite",
+		"description": "Comprehensive Postman test collection for PIM Tool Backend (Spring Boot & JPA). Includes Happy Path and Error Handling scenarios with automated assertion tests and debugging documentation.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
-	"item": [
+	"variable": [
 		{
-			"name": "main",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "localhost:8080/main",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"main"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "project/search",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "localhost:8080/project/search",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"project",
-						"search"
-					]
-				}
-			},
-			"response": []
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
 		}
 	],
-	"protocolProfileBehavior": {}
+	"item": [
+		{
+			"name": "01 - Reference Data",
+			"item": [
+				{
+					"name": "Get All Employees",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/employees",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"employees"
+							]
+						},
+						"description": "Retrieve all employees with their Visa, Name, and BirthDate.\n\n**Expected Status:** 200 OK\n\n**Breakpoint Location:** `EmployeeController.java`"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is an array of employees\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an(\"array\");",
+									"    pm.expect(jsonData.length).to.be.at.least(1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get All Groups",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/groups",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"groups"
+							]
+						},
+						"description": "Retrieve all project groups with Group Leader details.\n\n**Expected Status:** 200 OK\n\n**Breakpoint Location:** `GroupController.java`"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response contains groups\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an(\"array\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "02 - Project Queries",
+			"item": [
+				{
+					"name": "Search Projects (Keyword & Status & Pagination)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/projects/search?keyword=EFV&status=NEW&page=0&size=5&sort=projectNumber,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects",
+								"search"
+							],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "EFV"
+								},
+								{
+									"key": "status",
+									"value": "NEW"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "5"
+								},
+								{
+									"key": "sort",
+									"value": "projectNumber,asc"
+								}
+							]
+						},
+						"description": "Search projects with criteria and pagination.\n\n**Expected Status:** 200 OK\n\n**Breakpoint Locations:**\n- `ProjectController.java:34`\n- `ProjectServiceImpl.java:82`\n- `ProjectRepositoryCustomImpl.java:searchProjects`"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Verify PageResponseDto structure\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property(\"content\");",
+									"    pm.expect(jsonData).to.have.property(\"totalElements\");",
+									"    pm.expect(jsonData).to.have.property(\"totalPages\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Project By ID (Success)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/projects/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects",
+								"1"
+							]
+						},
+						"description": "Fetch project detail by valid ID = 1.\n\n**Expected Status:** 200 OK\n\n**Breakpoint Locations:**\n- `ProjectController.java:39`\n- `ProjectServiceImpl.java:65`"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Verify project ID and number\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.eql(1);",
+									"    pm.expect(jsonData.projectNumber).to.eql(1001);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Project By ID - Not Found (Error 404)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/projects/99999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects",
+								"99999"
+							]
+						},
+						"description": "Attempt to fetch a non-existent project ID = 99999.\n\n**Expected Status:** 404 Not Found\n\n**Breakpoint Locations:**\n- `ProjectServiceImpl.java:66` (orElseThrow)\n- `GlobalExceptionHandler.java:37` (handleBaseBusinessException)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404 Not Found\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"pm.test(\"Error message indicates not found\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.statusCode).to.eql(404);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "03 - Project Creation",
+			"item": [
+				{
+					"name": "Create Project - Success (201 Created)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectNumber\": 8888,\n  \"name\": \"Postman Integration Project\",\n  \"customer\": \"ELCA Vietnam\",\n  \"groupId\": 1,\n  \"status\": \"NEW\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-12-31\",\n  \"memberVisas\": [\"DTH\", \"BHU\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects"
+							]
+						},
+						"description": "Create a new project with valid data and members.\n\n**Expected Status:** 201 Created\n\n**Breakpoint Locations:**\n- `ProjectController.java:51`\n- `ProjectServiceImpl.java:96` (validateForCreate)\n- `ProjectServiceImpl.java:104` (saveAndFlush)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Returned entity has initial version = 0\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.projectNumber).to.eql(8888);",
+									"    pm.expect(jsonData.version).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Project - Duplicate Number (Error 400)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectNumber\": 1001,\n  \"name\": \"Duplicate Project Number\",\n  \"customer\": \"Customer A\",\n  \"groupId\": 1,\n  \"status\": \"NEW\",\n  \"startDate\": \"2026-09-01\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects"
+							]
+						},
+						"description": "Project number 1001 already exists in data.sql.\n\n**Expected Status:** 400 Bad Request\n\n**Breakpoint Locations:**\n- `ProjectValidator.java:85` (existsByProjectNumber)\n- `GlobalExceptionHandler.java:37` (handleBaseBusinessException)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 Bad Request\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Project - Blank Name (Error 400)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectNumber\": 8889,\n  \"name\": \"   \",\n  \"customer\": \"Customer B\",\n  \"groupId\": 1,\n  \"status\": \"NEW\",\n  \"startDate\": \"2026-09-01\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects"
+							]
+						},
+						"description": "Project name cannot be blank.\n\n**Expected Status:** 400 Bad Request\n\n**Breakpoint Locations:**\n- `ProjectValidator.java:36`\n- `GlobalExceptionHandler.java:95` (handleIllegalArgument)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 Bad Request\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Project - Invalid Date Range (Error 400)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectNumber\": 8890,\n  \"name\": \"Invalid Dates\",\n  \"customer\": \"Customer C\",\n  \"groupId\": 1,\n  \"status\": \"NEW\",\n  \"startDate\": \"2026-12-31\",\n  \"endDate\": \"2026-01-01\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects"
+							]
+						},
+						"description": "End date is before Start date.\n\n**Expected Status:** 400 Bad Request\n\n**Breakpoint Locations:**\n- `ProjectValidator.java:54`\n- `GlobalExceptionHandler.java:95` (handleIllegalArgument)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 Bad Request\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Project - Non-existent Visa (Error 400)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectNumber\": 8891,\n  \"name\": \"Unknown Visa Project\",\n  \"customer\": \"Customer D\",\n  \"groupId\": 1,\n  \"status\": \"NEW\",\n  \"startDate\": \"2026-09-01\",\n  \"memberVisas\": [\"DTH\", \"UNKNOWN_VISA_XYZ\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects"
+							]
+						},
+						"description": "Visa UNKNOWN_VISA_XYZ does not exist in EMPLOYEE table.\n\n**Expected Status:** 400 Bad Request\n\n**Breakpoint Locations:**\n- `ProjectValidator.java:70`\n- `GlobalExceptionHandler.java:37`"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 Bad Request\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "04 - Project Update",
+			"item": [
+				{
+					"name": "Update Project - Success (200 OK)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectNumber\": 1001,\n  \"name\": \"EFV Core Banking - Updated Name\",\n  \"customer\": \"EFV Financial Group\",\n  \"groupId\": 1,\n  \"status\": \"NEW\",\n  \"startDate\": \"2021-01-01\",\n  \"endDate\": \"2025-12-31\",\n  \"version\": 0,\n  \"memberVisas\": [\"DTH\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects",
+								"1"
+							]
+						},
+						"description": "Update project 1 with matching version = 0.\n\n**Expected Status:** 200 OK (version increments to 1)\n\n**Breakpoint Locations:**\n- `ProjectController.java:45`\n- `ProjectServiceImpl.java:117` (validateForUpdate)\n- `ProjectServiceImpl.java:121` (saveAndFlush)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Version incremented\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.version).to.eql(1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Project - Cannot Change Number (Error 400)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectNumber\": 9999,\n  \"name\": \"Attempt Changing Number\",\n  \"customer\": \"EFV\",\n  \"groupId\": 1,\n  \"status\": \"NEW\",\n  \"startDate\": \"2021-01-01\",\n  \"version\": 0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects",
+								"1"
+							]
+						},
+						"description": "Project number cannot be changed in edit mode.\n\n**Expected Status:** 400 Bad Request\n\n**Breakpoint Locations:**\n- `ProjectValidator.java:93`\n- `GlobalExceptionHandler.java:95`"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 Bad Request\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Project - Concurrent Conflict (Error 409)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectNumber\": 1001,\n  \"name\": \"Stale Concurrent Update\",\n  \"customer\": \"EFV\",\n  \"groupId\": 1,\n  \"status\": \"NEW\",\n  \"startDate\": \"2021-01-01\",\n  \"version\": 0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects",
+								"1"
+							]
+						},
+						"description": "Send stale version = 0 after project 1 version was already incremented to 1.\n\n**Expected Status:** 409 Conflict\n\n**Breakpoint Locations:**\n- `ProjectValidator.java:97` (throws ObjectOptimisticLockingFailureException)\n- `GlobalExceptionHandler.java:60` (handleOptimisticLockingFailure)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409 Conflict\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "05 - Project Deletion",
+			"item": [
+				{
+					"name": "Delete Projects - 100% Success (200 OK)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n  5\n]"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects"
+							]
+						},
+						"description": "Delete project ID 5 (TRADEECO, status 'NEW').\n\n**Expected Status:** 200 OK\n**Response Body:** ProjectDeleteResponseDto with empty notFoundIds\n\n**Breakpoint Locations:**\n- `ProjectController.java:56`\n- `ProjectServiceImpl.java:135` (findAllById)\n- `ProjectServiceImpl.java:153` (deleteAll)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Verify delete response counts\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.requestedCount).to.eql(1);",
+									"    pm.expect(jsonData.deletedCount).to.eql(1);",
+									"    pm.expect(jsonData.notFoundIds).to.be.an(\"array\").that.is.empty;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Delete Projects - Transparent Missing IDs (200 OK)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n  5,\n  999\n]"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects"
+							]
+						},
+						"description": "Delete list contains ID 999 which does NOT exist in DB. The operation commits valid projects and transparently reports missing IDs.\n\n**Expected Status:** 200 OK\n**Response Body:** notFoundIds contains [999]\n\n**Breakpoint Locations:**\n- `ProjectServiceImpl.java:146` (foundIds)\n- `ProjectServiceImpl.java:148` (notFoundIds)\n- `ProjectServiceImpl.java:165` (return response DTO)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Verify notFoundIds contains 999\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.notFoundIds).to.include(999);",
+									"    pm.expect(jsonData.message).to.include(\"999\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Delete Projects - Status Not NEW (Error 400 Rollback)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n  2\n]"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects"
+							]
+						},
+						"description": "Project ID 2 has status 'PLA' (Planned). The transaction MUST rollback completely.\n\n**Expected Status:** 400 Bad Request\n\n**Breakpoint Locations:**\n- `ProjectServiceImpl.java:139` (throws InvalidProjectStatusForDeletionException)\n- `GlobalExceptionHandler.java:37` (catches BaseBusinessException)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 Bad Request\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Delete Projects - Empty List (200 OK)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[]"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects"
+							]
+						},
+						"description": "Sending an empty list returns immediately with 0 deleted count.\n\n**Expected Status:** 200 OK"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Deleted count is 0\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.deletedCount).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
 }

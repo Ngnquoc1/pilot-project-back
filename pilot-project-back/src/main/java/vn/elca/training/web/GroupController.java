@@ -8,11 +8,9 @@ import vn.elca.training.model.dto.GroupDto;
 import vn.elca.training.service.GroupService;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
 @RestController
 @RequestMapping("/groups")
-public class GroupController extends AbstractApplicationController {
+public class GroupController {
 
     private final GroupService groupService;
 

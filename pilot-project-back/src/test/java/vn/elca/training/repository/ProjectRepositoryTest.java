@@ -163,13 +163,80 @@ public class ProjectRepositoryTest {
 
     @Test
     public void testSearchProjects_WithCriteriaAndPagination() {
-        org.springframework.data.domain.Page<Project> page = projectRepository.searchProjects(
+        org.springframework.data.domain.Page<vn.elca.training.model.dto.response.ProjectSearchResultDto> page = projectRepository.searchProjects(
                 new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto(),
                 org.springframework.data.domain.PageRequest.of(0, 10)
         );
         Assert.assertNotNull(page);
         Assert.assertEquals(10, page.getContent().size());
-        // Verify groupLeader is loaded without extra query
-        Assert.assertNotNull(page.getContent().get(0).getGroup().getGroupLeader());
+        vn.elca.training.model.dto.response.ProjectSearchResultDto firstItem = page.getContent().get(0);
+        Assert.assertNotNull(firstItem.getId());
+        Assert.assertNotNull(firstItem.getProjectNumber());
+        Assert.assertNotNull(firstItem.getName());
+        Assert.assertNotNull(firstItem.getCustomer());
+        Assert.assertNotNull(firstItem.getStatus());
+        Assert.assertNotNull(firstItem.getStartDate());
+    }
+
+    @Test
+    public void testSearchProjects_ByGroupLeaderVisa() {
+        vn.elca.training.model.dto.request.ProjectSearchCriteriaDto criteria =
+                new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto();
+        criteria.setGroupLeaderVisa("PL1");
+
+        org.springframework.data.domain.Page<vn.elca.training.model.dto.response.ProjectSearchResultDto> page =
+                projectRepository.searchProjects(criteria, org.springframework.data.domain.PageRequest.of(0, 10));
+
+        Assert.assertNotNull(page);
+        Assert.assertTrue(page.getTotalElements() > 0);
+    }
+
+    @Test
+    public void testSearchProjects_ByMemberVisas() {
+        vn.elca.training.model.dto.request.ProjectSearchCriteriaDto criteria =
+                new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto();
+        criteria.setMemberVisas(java.util.Set.of("DTH"));
+
+        org.springframework.data.domain.Page<vn.elca.training.model.dto.response.ProjectSearchResultDto> page =
+                projectRepository.searchProjects(criteria, org.springframework.data.domain.PageRequest.of(0, 10));
+
+        Assert.assertNotNull(page);
+        Assert.assertTrue(page.getTotalElements() > 0);
+    }
+
+    @Test
+    public void testSearchProjects_ByDateRanges() {
+        vn.elca.training.model.dto.request.ProjectSearchCriteriaDto criteria =
+                new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto();
+        criteria.setStartDateFrom(java.time.LocalDate.of(2010, 1, 1));
+        criteria.setStartDateTo(java.time.LocalDate.of(2030, 12, 31));
+        criteria.setEndDateFrom(java.time.LocalDate.of(2010, 1, 1));
+        criteria.setEndDateTo(java.time.LocalDate.of(2030, 12, 31));
+
+        org.springframework.data.domain.Page<vn.elca.training.model.dto.response.ProjectSearchResultDto> page =
+                projectRepository.searchProjects(criteria, org.springframework.data.domain.PageRequest.of(0, 10));
+
+        Assert.assertNotNull(page);
+    }
+
+    @Test
+    public void testSearchProjects_WithSortingVariants() {
+        org.springframework.data.domain.Sort[] sorts = new org.springframework.data.domain.Sort[]{
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "name"),
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "customer"),
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "status"),
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "startDate"),
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "projectNumber")
+        };
+
+        for (org.springframework.data.domain.Sort sort : sorts) {
+            org.springframework.data.domain.Page<vn.elca.training.model.dto.response.ProjectSearchResultDto> page =
+                    projectRepository.searchProjects(
+                            new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto(),
+                            org.springframework.data.domain.PageRequest.of(0, 5, sort)
+                    );
+            Assert.assertNotNull(page);
+            Assert.assertEquals(5, page.getContent().size());
+        }
     }
 }

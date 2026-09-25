@@ -9,7 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.elca.training.model.dto.request.ProjectRequestDto;
 import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
 import vn.elca.training.model.dto.response.PageResponseDto;
+import vn.elca.training.model.dto.response.ProjectDeleteResponseDto;
 import vn.elca.training.model.dto.response.ProjectResponseDto;
+import vn.elca.training.model.dto.response.ProjectSearchResultDto;
 import vn.elca.training.model.entity.Employee;
 import vn.elca.training.model.entity.Group;
 import vn.elca.training.model.entity.Project;
@@ -25,8 +27,11 @@ import vn.elca.training.service.ProjectService;
 import vn.elca.training.util.ApplicationMapper;
 import vn.elca.training.validator.ProjectValidator;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -77,14 +82,11 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponseDto<ProjectResponseDto> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable) {
-        Page<Project> pageResult = projectRepository.searchProjects(criteria, pageable);
-        List<ProjectResponseDto> dtoList = pageResult.getContent().stream()
-                .map(applicationMapper::projectToProjectResponseDto)
-                .collect(Collectors.toList());
+    public PageResponseDto<ProjectSearchResultDto> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable) {
+        Page<ProjectSearchResultDto> pageResult = projectRepository.searchProjects(criteria, pageable);
 
         return new PageResponseDto<>(
-                dtoList,
+                pageResult.getContent(),
                 pageResult.getNumber(),
                 pageResult.getSize(),
                 pageResult.getTotalElements(),
@@ -125,18 +127,46 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    @Transactional()
-    public void delete(List<Long> projectIds) {
+    @Transactional
+    public ProjectDeleteResponseDto delete(List<Long> projectIds) {
         if (projectIds == null || projectIds.isEmpty()) {
-            return;
+            return new ProjectDeleteResponseDto(0, 0, Collections.emptyList(), "No project IDs provided.");
         }
-        List<Project> projects = projectRepository.findAllById(projectIds);
+
+        Set<Long> uniqueIds = new LinkedHashSet<>(projectIds);
+        List<Project> projects = projectRepository.findAllById(uniqueIds);
+
+        // Kiểm tra ràng buộc nghiệp vụ: Chỉ cho phép xóa project trạng thái NEW (Rollback nếu vi phạm)
         for (Project project : projects) {
             if (project.getStatus() != ProjectStatus.NEW) {
                 throw new InvalidProjectStatusForDeletionException("Only projects with status 'NEW' can be deleted.");
             }
         }
-        projectRepository.deleteAll(projects);
+
+        // Xác định danh sách ID đã tìm thấy và các ID không tồn tại (đã bị xóa trước đó)
+        Set<Long> foundIds = projects.stream()
+                .map(Project::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        List<Long> notFoundIds = uniqueIds.stream()
+                .filter(id -> !foundIds.contains(id))
+                .collect(Collectors.toList());
+
+        // Xóa các entity hợp lệ tìm thấy
+        if (!projects.isEmpty()) {
+            projectRepository.deleteAll(projects);
+        }
+
+        // Tạo thông điệp minh bạch
+        String message;
+        if (notFoundIds.isEmpty()) {
+            message = String.format("Successfully deleted %d project(s).", projects.size());
+        } else {
+            message = String.format("Deleted %d project(s). Project ID(s) %s not found or already deleted.",
+                    projects.size(), notFoundIds);
+        }
+
+        return new ProjectDeleteResponseDto(uniqueIds.size(), projects.size(), notFoundIds, message);
     }
 
     @Override
@@ -151,6 +181,7 @@ public class ProjectServiceImpl implements ProjectService {
         project.setEndDate(dto.getEndDate());
         project.setStatus(dto.getStatus() != null ? dto.getStatus() : ProjectStatus.NEW);
         project.setVersion(dto.getVersion());
+
         Group group = groupRepository.findById(dto.getGroupId())
                 .orElseThrow(() -> new IllegalArgumentException("Group not found with id: " + dto.getGroupId()));
         project.setGroup(group);

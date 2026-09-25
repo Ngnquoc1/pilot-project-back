@@ -10,7 +10,7 @@ public class ProjectNotFoundException extends BaseBusinessException {
 
     public ProjectNotFoundException(Long id) {
         super(
-                ErrorCode.RESOURCE_NOT_FOUND,
+                ErrorCode.PROJECT_NOT_FOUND,
                 new Object[]{id},
                 String.format("Project with ID %d not found", id)
         );

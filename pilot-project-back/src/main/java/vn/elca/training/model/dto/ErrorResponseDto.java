@@ -9,7 +9,6 @@ import java.util.Map;
  */
 public class ErrorResponseDto {
     private int status;
-    private String error;
     private String message;
     private LocalDateTime timestamp;
     private Map<String, String> fieldErrors;
@@ -18,16 +17,14 @@ public class ErrorResponseDto {
         this.timestamp = LocalDateTime.now(ZoneId.systemDefault());
     }
 
-    public ErrorResponseDto(int status, String error, String message) {
+    public ErrorResponseDto(int status, String message) {
         this.status = status;
-        this.error = error;
         this.message = message;
         this.timestamp = LocalDateTime.now(ZoneId.systemDefault());
     }
 
-    public ErrorResponseDto(int status, String error, String message, Map<String, String> fieldErrors) {
+    public ErrorResponseDto(int status, String message, Map<String, String> fieldErrors) {
         this.status = status;
-        this.error = error;
         this.message = message;
         this.fieldErrors = fieldErrors;
         this.timestamp = LocalDateTime.now(ZoneId.systemDefault());
@@ -39,14 +36,6 @@ public class ErrorResponseDto {
 
     public void setStatus(int status) {
         this.status = status;
-    }
-
-    public String getError() {
-        return error;
-    }
-
-    public void setError(String error) {
-        this.error = error;
     }
 
     public String getMessage() {

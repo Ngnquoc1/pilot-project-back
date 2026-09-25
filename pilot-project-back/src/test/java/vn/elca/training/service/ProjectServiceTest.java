@@ -6,8 +6,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import vn.elca.training.model.dto.request.ProjectRequestDto;
+import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
+import vn.elca.training.model.dto.response.PageResponseDto;
+import vn.elca.training.model.dto.response.ProjectDeleteResponseDto;
 import vn.elca.training.model.dto.response.ProjectResponseDto;
 import vn.elca.training.model.entity.Employee;
 import vn.elca.training.model.entity.Group;
@@ -35,6 +42,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 import org.mockito.Spy;
+import vn.elca.training.model.dto.response.ProjectSearchResultDto;
 import vn.elca.training.util.ApplicationMapper;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,6 +83,33 @@ public class ProjectServiceTest {
         assertEquals("EFV Core", actualResult.get(0).getName());
         assertEquals(ProjectStatus.NEW, actualResult.get(0).getStatus());
         verify(projectRepository).searchProjects(keyword, status);
+    }
+
+    @Test
+    @DisplayName("Case 1b: Search projects with criteria and pagination returning ProjectSearchResultDto")
+    void testSearchProjects_WithCriteriaAndPagination_ShouldReturnPageOfSearchResultDto() {
+        ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto("EFV", ProjectStatus.NEW);
+        Pageable pageable = PageRequest.of(0, 5);
+        ProjectSearchResultDto dto = new ProjectSearchResultDto(10L, 1001, "EFV Core", "EFV", ProjectStatus.NEW, LocalDate.of(2021, 1, 1), 0L);
+
+        Page<ProjectSearchResultDto> mockPage = new PageImpl<>(List.of(dto), pageable, 1);
+        when(projectRepository.searchProjects(criteria, pageable)).thenReturn(mockPage);
+
+        PageResponseDto<ProjectSearchResultDto> result = projectService.searchProjects(criteria, pageable);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
+        ProjectSearchResultDto item = result.getContent().get(0);
+        assertEquals(10L, item.getId());
+        assertEquals(1001, item.getProjectNumber());
+        assertEquals("EFV Core", item.getName());
+        assertEquals("EFV", item.getCustomer());
+        assertEquals(ProjectStatus.NEW, item.getStatus());
+        assertEquals(LocalDate.of(2021, 1, 1), item.getStartDate());
+        assertEquals(0L, item.getVersion());
+
+        verify(projectRepository).searchProjects(criteria, pageable);
     }
 
     @Test
@@ -234,14 +269,40 @@ public class ProjectServiceTest {
     @DisplayName("Case 9: Delete projects with status NEW successfully")
     void testDeleteProjects_WhenStatusIsNew_ShouldDeleteSuccessfully() {
         Project p1 = new Project(1001, "Project 1", "Cust 1", ProjectStatus.NEW, LocalDate.now(), null, null);
+        p1.setId(1L);
         Project p2 = new Project(1002, "Project 2", "Cust 2", ProjectStatus.NEW, LocalDate.now(), null, null);
+        p2.setId(2L);
         List<Long> ids = List.of(1L, 2L);
 
-        when(projectRepository.findAllById(ids)).thenReturn(List.of(p1, p2));
+        when(projectRepository.findAllById(any())).thenReturn(List.of(p1, p2));
 
-        projectService.delete(ids);
+        ProjectDeleteResponseDto response = projectService.delete(ids);
 
+        assertNotNull(response);
+        assertEquals(2, response.getRequestedCount());
+        assertEquals(2, response.getDeletedCount());
+        assertTrue(response.getNotFoundIds().isEmpty());
+        assertTrue(response.getMessage().contains("Successfully deleted 2"));
         verify(projectRepository).deleteAll(List.of(p1, p2));
+    }
+
+    @Test
+    @DisplayName("Case 9b: Delete projects when some IDs are not found in DB")
+    void testDeleteProjects_WhenSomeIdsNotFound_ShouldDeleteExistingAndReturnNotFoundIds() {
+        Project p1 = new Project(1001, "Project 1", "Cust 1", ProjectStatus.NEW, LocalDate.now(), null, null);
+        p1.setId(1L);
+        List<Long> ids = List.of(1L, 999L);
+
+        when(projectRepository.findAllById(any())).thenReturn(List.of(p1));
+
+        ProjectDeleteResponseDto response = projectService.delete(ids);
+
+        assertNotNull(response);
+        assertEquals(2, response.getRequestedCount());
+        assertEquals(1, response.getDeletedCount());
+        assertEquals(List.of(999L), response.getNotFoundIds());
+        assertTrue(response.getMessage().contains("999"));
+        verify(projectRepository).deleteAll(List.of(p1));
     }
 
     @Test
@@ -251,7 +312,7 @@ public class ProjectServiceTest {
         Project p2 = new Project(1002, "Project 2", "Cust 2", ProjectStatus.INP, LocalDate.now(), null, null);
         List<Long> ids = List.of(1L, 2L);
 
-        when(projectRepository.findAllById(ids)).thenReturn(List.of(p1, p2));
+        when(projectRepository.findAllById(any())).thenReturn(List.of(p1, p2));
 
         assertThrows(InvalidProjectStatusForDeletionException.class, () -> projectService.delete(ids));
         verify(projectRepository, never()).deleteAll(any());
@@ -260,8 +321,13 @@ public class ProjectServiceTest {
     @Test
     @DisplayName("Case 11: Do nothing when deleting empty or null project ID list")
     void testDeleteProjects_WhenListIsNullOrEmpty_ShouldDoNothing() {
-        projectService.delete(null);
-        projectService.delete(Collections.emptyList());
+        ProjectDeleteResponseDto r1 = projectService.delete(null);
+        ProjectDeleteResponseDto r2 = projectService.delete(Collections.emptyList());
+
+        assertNotNull(r1);
+        assertEquals(0, r1.getDeletedCount());
+        assertNotNull(r2);
+        assertEquals(0, r2.getDeletedCount());
 
         verify(projectRepository, never()).findAllById(any());
         verify(projectRepository, never()).deleteAll(any());
