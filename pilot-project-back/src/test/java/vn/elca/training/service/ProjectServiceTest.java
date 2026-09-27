@@ -20,6 +20,7 @@ import vn.elca.training.model.entity.Employee;
 import vn.elca.training.model.entity.Group;
 import vn.elca.training.model.entity.Project;
 import vn.elca.training.model.entity.ProjectStatus;
+import org.springframework.dao.DataIntegrityViolationException;
 import vn.elca.training.model.exception.InvalidProjectStatusForDeletionException;
 import vn.elca.training.model.exception.ProjectNotFoundException;
 import vn.elca.training.model.exception.ProjectNumberAlreadyException;
@@ -67,26 +68,9 @@ public class ProjectServiceTest {
     @InjectMocks
     private ProjectServiceImpl projectService;
 
-    @Test
-    @DisplayName("Case 1: Search projects by keyword and status (US02 searchProjects)")
-    void testSearchProjects_WithKeywordAndStatus_ShouldReturnMatchingProjects() {
-        String keyword = "EFV";
-        ProjectStatus status = ProjectStatus.NEW;
-        Project project = new Project(1001, "EFV Core", "EFV", ProjectStatus.NEW, LocalDate.now(), null, null);
-
-        when(projectRepository.searchProjects(keyword, status)).thenReturn(List.of(project));
-
-        List<ProjectResponseDto> actualResult = projectService.searchProjects(keyword, status);
-
-        assertNotNull(actualResult);
-        assertEquals(1, actualResult.size());
-        assertEquals("EFV Core", actualResult.get(0).getName());
-        assertEquals(ProjectStatus.NEW, actualResult.get(0).getStatus());
-        verify(projectRepository).searchProjects(keyword, status);
-    }
 
     @Test
-    @DisplayName("Case 1b: Search projects with criteria and pagination returning ProjectSearchResultDto")
+    @DisplayName("Case 1: Search projects with criteria and pagination returning ProjectSearchResultDto")
     void testSearchProjects_WithCriteriaAndPagination_ShouldReturnPageOfSearchResultDto() {
         ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto("EFV", ProjectStatus.NEW);
         Pageable pageable = PageRequest.of(0, 5);
@@ -330,6 +314,119 @@ public class ProjectServiceTest {
         assertEquals(0, r2.getDeletedCount());
 
         verify(projectRepository, never()).findAllById(any());
+        verify(projectRepository, never()).deleteAll(any());
+    }
+
+    @Test
+    @DisplayName("Case 4b: Create project successfully when member visas is null")
+    void testCreateProject_WhenMemberVisasIsNull_ShouldSucceedWithEmptyMembers() {
+        ProjectRequestDto dto = new ProjectRequestDto();
+        dto.setProjectNumber(1006);
+        dto.setName("Project Without Members");
+        dto.setCustomer("Customer B");
+        dto.setGroupId(1L);
+        dto.setStartDate(LocalDate.of(2021, 1, 1));
+        dto.setMemberVisas(null);
+
+        Group mockGroup = new Group();
+        mockGroup.setId(1L);
+
+        doNothing().when(projectValidator).validateForCreate(dto);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(mockGroup));
+        when(projectRepository.saveAndFlush(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProjectResponseDto created = projectService.create(dto);
+
+        assertNotNull(created);
+        assertEquals(1006, created.getProjectNumber());
+        assertTrue(created.getMembers().isEmpty());
+        verify(employeeRepository, never()).findByVisaIn(any());
+        verify(projectRepository).saveAndFlush(any(Project.class));
+    }
+
+    @Test
+    @DisplayName("Case 5b: Throw ProjectNumberAlreadyException when database constraint violation occurs during save")
+    void testCreateProject_WhenDatabaseThrowsDataIntegrityViolationException_ShouldThrowProjectNumberAlreadyException() {
+        ProjectRequestDto dto = new ProjectRequestDto();
+        dto.setProjectNumber(1005);
+        dto.setName("New Project");
+        dto.setCustomer("Customer A");
+        dto.setGroupId(1L);
+        dto.setStartDate(LocalDate.of(2021, 1, 1));
+
+        Group mockGroup = new Group();
+        mockGroup.setId(1L);
+
+        doNothing().when(projectValidator).validateForCreate(dto);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(mockGroup));
+        when(projectRepository.saveAndFlush(any(Project.class)))
+                .thenThrow(new DataIntegrityViolationException("Duplicate key project_number"));
+
+        assertThrows(ProjectNumberAlreadyException.class, () -> projectService.create(dto));
+        verify(projectRepository).saveAndFlush(any(Project.class));
+    }
+
+    @Test
+    @DisplayName("Case 5c: Throw IllegalArgumentException when group is not found")
+    void testCreateProject_WhenGroupNotFound_ShouldThrowIllegalArgumentException() {
+        ProjectRequestDto dto = new ProjectRequestDto();
+        dto.setProjectNumber(1005);
+        dto.setName("New Project");
+        dto.setCustomer("Customer A");
+        dto.setGroupId(99L);
+        dto.setStartDate(LocalDate.of(2021, 1, 1));
+
+        doNothing().when(projectValidator).validateForCreate(dto);
+        when(groupRepository.findById(99L)).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> projectService.create(dto));
+        assertTrue(ex.getMessage().contains("Group not found with id: 99"));
+        verify(projectRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("Case 6b: Update project when existing members is null and input member visas is null")
+    void testUpdateProject_WhenExistingMembersIsNullAndInputVisasNull_ShouldInitializeEmptyMembers() {
+        Long id = 1L;
+        Project existing = new Project(1001, "Old Name", "Old Customer", ProjectStatus.NEW, LocalDate.of(2021, 1, 1), null, null);
+        existing.setId(id);
+        existing.setMembers(null);
+
+        Group mockGroup = new Group();
+        mockGroup.setId(1L);
+
+        ProjectRequestDto dto = new ProjectRequestDto();
+        dto.setName("Updated Name");
+        dto.setCustomer("Customer");
+        dto.setGroupId(1L);
+        dto.setStartDate(LocalDate.of(2021, 1, 1));
+        dto.setMemberVisas(null);
+
+        when(projectRepository.findById(id)).thenReturn(Optional.of(existing));
+        doNothing().when(projectValidator).validateForUpdate(existing, dto);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(mockGroup));
+        when(projectRepository.saveAndFlush(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProjectResponseDto updated = projectService.update(dto, id);
+
+        assertNotNull(updated);
+        assertTrue(updated.getMembers().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Case 9c: Delete projects when all IDs are not found in DB")
+    void testDeleteProjects_WhenAllIdsNotFound_ShouldNotCallDeleteAllAndReturnAllNotFoundIds() {
+        List<Long> ids = List.of(998L, 999L);
+        when(projectRepository.findAllById(any())).thenReturn(Collections.emptyList());
+
+        ProjectDeleteResponseDto response = projectService.delete(ids);
+
+        assertNotNull(response);
+        assertEquals(2, response.getRequestedCount());
+        assertEquals(0, response.getDeletedCount());
+        assertEquals(2, response.getNotFoundIds().size());
+        assertTrue(response.getNotFoundIds().containsAll(List.of(998L, 999L)));
+        assertTrue(response.getMessage().contains("Deleted 0 project(s)"));
         verify(projectRepository, never()).deleteAll(any());
     }
 }

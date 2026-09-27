@@ -98,4 +98,89 @@ public class ApplicationMapperTest {
         assertEquals(8L, dto.getGroupLeaderId());
         assertEquals("PL1", dto.getGroupLeaderVisa());
     }
+
+    @Test
+    @DisplayName("Test mapping when entity inputs are null")
+    void testMappingWhenEntityIsNull_ShouldReturnNull() {
+        // Ensures null-safety guard clauses return null safely without throwing NullPointerException
+        assertNull(mapper.projectToProjectResponseDto(null));
+        assertNull(mapper.employeeToEmployeeDto(null));
+        assertNull(mapper.groupToGroupDto(null));
+    }
+
+    @Test
+    @DisplayName("Test mapping Project Entity when Group and Members are null")
+    void testProjectToProjectResponseDto_WhenGroupAndMembersNull() {
+        // When optional relationships (group and members) are absent, DTO should default members to an empty set
+        Project project = new Project(1002, "EFV Solo", "Customer B", ProjectStatus.INP, LocalDate.of(2022, 1, 1), null, null);
+        project.setId(200L);
+        project.setGroup(null);
+        project.setMembers(null);
+
+        ProjectResponseDto dto = mapper.projectToProjectResponseDto(project);
+
+        assertNotNull(dto);
+        assertEquals(200L, dto.getId());
+        assertEquals(1002, dto.getProjectNumber());
+        assertNull(dto.getGroupId());
+        assertNull(dto.getGroupLeaderVisa());
+        assertTrue(dto.getMembers().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Test mapping Project Entity when Group leader is null")
+    void testProjectToProjectResponseDto_WhenGroupLeaderNull() {
+        // When group leader is not assigned, leader visa should gracefully default to null
+        Group group = new Group();
+        group.setId(3L);
+        group.setGroupLeader(null);
+
+        Project project = new Project(1003, "No Leader Project", "Customer C", ProjectStatus.PLA, LocalDate.of(2022, 3, 1), null, group);
+        project.setId(300L);
+
+        ProjectResponseDto dto = mapper.projectToProjectResponseDto(project);
+
+        assertNotNull(dto);
+        assertEquals(3L, dto.getGroupId());
+        assertNull(dto.getGroupLeaderVisa());
+    }
+
+    @Test
+    @DisplayName("Test mapping Group Entity when Group leader is null")
+    void testGroupToGroupDto_WhenLeaderNull() {
+        // Group without leader should map cleanly with all leader fields set to null
+        Group group = new Group();
+        group.setId(5L);
+        group.setGroupLeader(null);
+
+        GroupDto dto = mapper.groupToGroupDto(group);
+
+        assertNotNull(dto);
+        assertEquals(5L, dto.getId());
+        assertNull(dto.getGroupLeaderId());
+        assertNull(dto.getGroupLeaderVisa());
+        assertNull(dto.getGroupLeaderName());
+    }
+
+    @Test
+    @DisplayName("Test mapping Group Entity when leader first name or last name is null")
+    void testGroupToGroupDto_WhenLeaderNamesNull() {
+        // Verifies ternary fallback when leader names are null, preventing "null null" string display
+        Employee leader = new Employee();
+        leader.setId(15L);
+        leader.setVisa("LDR");
+        leader.setFirstName(null);
+        leader.setLastName(null);
+
+        Group group = new Group(leader);
+        group.setId(6L);
+
+        GroupDto dto = mapper.groupToGroupDto(group);
+
+        assertNotNull(dto);
+        assertEquals(6L, dto.getId());
+        assertEquals(15L, dto.getGroupLeaderId());
+        assertEquals("LDR", dto.getGroupLeaderVisa());
+        assertEquals(" ", dto.getGroupLeaderName());
+    }
 }

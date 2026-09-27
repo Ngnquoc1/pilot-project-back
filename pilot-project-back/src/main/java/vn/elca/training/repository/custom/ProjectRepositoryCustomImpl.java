@@ -13,7 +13,6 @@ import org.springframework.stereotype.Repository;
 import com.querydsl.core.types.Projections;
 import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
 import vn.elca.training.model.dto.response.ProjectSearchResultDto;
-import vn.elca.training.model.entity.Project;
 import vn.elca.training.model.entity.ProjectStatus;
 import vn.elca.training.model.entity.QProject;
 
@@ -28,17 +27,6 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
 
     @Autowired
     private JPAQueryFactory queryFactory;
-
-    @Override
-    public List<Project> searchProjects(String keyword, ProjectStatus status) {
-        QProject qProject = QProject.project;
-        ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto(keyword, status);
-        BooleanBuilder builder = buildSearchPredicate(qProject, criteria);
-        return queryFactory.selectFrom(qProject)
-                .where(builder)
-                .orderBy(qProject.projectNumber.asc())
-                .fetch();
-    }
 
     @Override
     public Page<ProjectSearchResultDto> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable) {

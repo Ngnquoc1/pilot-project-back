@@ -73,15 +73,6 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProjectResponseDto> searchProjects(String keyword, ProjectStatus status) {
-        return projectRepository.searchProjects(keyword, status)
-                .stream()
-                .map(applicationMapper::projectToProjectResponseDto)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public PageResponseDto<ProjectSearchResultDto> searchProjects(ProjectSearchCriteriaDto criteria, Pageable pageable) {
         Page<ProjectSearchResultDto> pageResult = projectRepository.searchProjects(criteria, pageable);
 
@@ -167,11 +158,6 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         return new ProjectDeleteResponseDto(uniqueIds.size(), projects.size(), notFoundIds, message);
-    }
-
-    @Override
-    public long count() {
-        return projectRepository.count();
     }
 
     private void mapDtoToEntity(Project project, ProjectRequestDto dto) {

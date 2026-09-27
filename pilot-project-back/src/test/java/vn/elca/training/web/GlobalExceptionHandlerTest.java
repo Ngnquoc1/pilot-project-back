@@ -11,12 +11,18 @@ import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import vn.elca.training.model.dto.ErrorResponseDto;
 import vn.elca.training.model.entity.Project;
 import vn.elca.training.model.exception.ApplicationUnexpectedException;
+import vn.elca.training.model.exception.BaseBusinessException;
+import vn.elca.training.model.exception.ErrorCode;
 import vn.elca.training.model.exception.ProjectNotFoundException;
 import vn.elca.training.model.exception.ProjectNumberAlreadyException;
 
+import java.util.List;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,6 +43,7 @@ public class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleBaseBusinessException: Returns formatted error with status")
     void testHandleBaseBusinessException() {
+        // Business exceptions with a messageKey should resolve localized text via MessageSource based on client Locale
         ProjectNotFoundException ex = new ProjectNotFoundException(999L);
         when(messageSource.getMessage(eq(ex.getMessageKey()), any(), any(), eq(Locale.ENGLISH)))
                 .thenReturn("Project with id '999' not found");
@@ -52,6 +59,7 @@ public class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleOptimisticLockingFailure: Returns 409 Conflict")
     void testHandleOptimisticLockingFailure() {
+        // Concurrent update conflict must return HTTP 409 Conflict with standard localized user guidance
         ObjectOptimisticLockingFailureException ex = new ObjectOptimisticLockingFailureException(Project.class, 1L);
         when(messageSource.getMessage(eq("project.concurrent.conflict"), any(), any(), eq(Locale.ENGLISH)))
                 .thenReturn("The project was updated by another transaction");
@@ -92,6 +100,7 @@ public class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleApplicationUnexpected: Returns 500 Internal Server Error")
     void testHandleApplicationUnexpected() {
+        // Generates a random UUID ErrorId for server-side log correlation while keeping the client message sanitized
         ApplicationUnexpectedException ex = new ApplicationUnexpectedException(new RuntimeException("System failure"));
 
         ResponseEntity<ErrorResponseDto> response = exceptionHandler.handleApplicationUnexpected(ex);
@@ -100,11 +109,13 @@ public class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals(500, response.getBody().getStatus());
         assertTrue(response.getBody().getMessage().contains("An unexpected system error occurred"));
+        assertTrue(response.getBody().getMessage().contains("Error ID:"));
     }
 
     @Test
     @DisplayName("handleGeneralException: Returns 500 Internal Server Error")
     void testHandleGeneralException() {
+        // Fallback for unhandled exceptions: masks internal details and provides a trackable ErrorId
         RuntimeException ex = new RuntimeException("Fatal error");
 
         ResponseEntity<ErrorResponseDto> response = exceptionHandler.handleGeneralException(ex);
@@ -113,5 +124,45 @@ public class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals(500, response.getBody().getStatus());
         assertTrue(response.getBody().getMessage().contains("An internal server error occurred"));
+        assertTrue(response.getBody().getMessage().contains("Error ID:"));
+    }
+
+    @Test
+    @DisplayName("handleBaseBusinessException: Fallbacks to default message when messageKey is null")
+    void testHandleBaseBusinessException_WhenMessageKeyIsNull_ShouldFallbackToDefaultMessage() {
+        // When messageKey is null, it should directly use ex.getMessage() and avoid unnecessary MessageSource lookup
+        BaseBusinessException ex = new BaseBusinessException(ErrorCode.INVALID_ARGUMENT, null, "Direct fallback error") {};
+
+        ResponseEntity<ErrorResponseDto> response = exceptionHandler.handleBaseBusinessException(ex, Locale.ENGLISH);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(400, response.getBody().getStatus());
+        assertEquals("Direct fallback error", response.getBody().getMessage());
+        verifyNoInteractions(messageSource);
+    }
+
+    @Test
+    @DisplayName("handleValidationExceptions: Returns 400 Bad Request with field errors")
+    void testHandleValidationExceptions() {
+        // Decomposes Spring Bean Validation FieldErrors into a Map<fieldName, message> for client-side form highlighting
+        MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
+        BindingResult bindingResult = mock(BindingResult.class);
+        FieldError fieldError1 = new FieldError("projectRequestDto", "name", "Project Name is mandatory");
+        FieldError fieldError2 = new FieldError("projectRequestDto", "customer", "Customer is mandatory");
+
+        when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError1, fieldError2));
+        when(ex.getBindingResult()).thenReturn(bindingResult);
+
+        ResponseEntity<ErrorResponseDto> response = exceptionHandler.handleValidationExceptions(ex);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(400, response.getBody().getStatus());
+        assertEquals("Request validation failed", response.getBody().getMessage());
+        assertNotNull(response.getBody().getFieldErrors());
+        assertEquals(2, response.getBody().getFieldErrors().size());
+        assertEquals("Project Name is mandatory", response.getBody().getFieldErrors().get("name"));
+        assertEquals("Customer is mandatory", response.getBody().getFieldErrors().get("customer"));
     }
 }

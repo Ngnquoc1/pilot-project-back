@@ -8,7 +8,6 @@ import vn.elca.training.repository.custom.EmployeeRepositoryCustom;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Repository interface for Employee entity.
@@ -17,7 +16,5 @@ import java.util.Optional;
  */
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long>, QuerydslPredicateExecutor<Employee>, EmployeeRepositoryCustom {
-    Optional<Employee> findByVisa(String visa);
     List<Employee> findByVisaIn(Collection<String> visas);
-    boolean existsByVisa(String visa);
 }

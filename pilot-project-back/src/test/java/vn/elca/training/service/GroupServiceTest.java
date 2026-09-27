@@ -15,6 +15,7 @@ import vn.elca.training.service.impl.GroupServiceImpl;
 import vn.elca.training.util.ApplicationMapper;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,6 +52,18 @@ public class GroupServiceTest {
         assertEquals(1L, result.get(0).getId());
         assertEquals(10L, result.get(0).getGroupLeaderId());
         assertEquals("GL1", result.get(0).getGroupLeaderVisa());
+        verify(groupRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("findAll: Returns empty list when no groups exist")
+    void testFindAll_WhenEmpty_ReturnsEmptyList() {
+        when(groupRepository.findAll()).thenReturn(Collections.emptyList());
+
+        List<GroupDto> result = groupService.findAll();
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
         verify(groupRepository).findAll();
     }
 }

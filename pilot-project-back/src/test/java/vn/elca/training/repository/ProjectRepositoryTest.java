@@ -1,26 +1,34 @@
 package vn.elca.training.repository;
 
-import com.querydsl.jpa.impl.JPAQuery;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import vn.elca.training.ApplicationWebConfig;
+import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
+import vn.elca.training.model.dto.response.ProjectSearchResultDto;
 import vn.elca.training.model.entity.*;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @ContextConfiguration(classes = {ApplicationWebConfig.class})
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @Transactional
+@DisplayName("Unit Tests for ProjectRepository")
 public class ProjectRepositoryTest {
 
     @PersistenceContext
@@ -38,62 +46,49 @@ public class ProjectRepositoryTest {
     private Group defaultGroup;
     private Employee leader;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         leader = employeeRepository.save(new Employee("LEA", "Leader", "Test", LocalDate.of(1985, 1, 1)));
         defaultGroup = groupRepository.save(new Group(leader));
-
     }
 
     @Test
-    public void testSaveAndFindProject() {
-        Project project = new Project(
-                2001,
-                "New Project Test",
-                "ELCA Client",
-                ProjectStatus.NEW,
-                LocalDate.of(2021, 1, 1),
-                LocalDate.of(2021, 12, 31),
-                defaultGroup
-        );
-        Project saved = projectRepository.save(project);
+    @DisplayName("findById: Eagerly fetches group, groupLeader, and members via @EntityGraph")
+    void testFindById_WithEntityGraph_FetchesRelationsEagerly() {
+        // Project ID 1 (number 1001) is seeded in data.sql with group 1 and members
+        Optional<Project> found = projectRepository.findById(1L);
+        assertTrue(found.isPresent(), "Expected project with ID 1 to exist");
 
-        Assert.assertNotNull(saved.getId());
-        Assert.assertNotNull(saved.getVersion());
-        Assert.assertEquals(Integer.valueOf(2001), saved.getProjectNumber());
+        // Detach entities from Hibernate session to verify @EntityGraph eager fetch
+        em.flush();
+        em.clear();
 
-        Optional<Project> found = projectRepository.findById(saved.getId());
-        Assert.assertTrue(found.isPresent());
-        Assert.assertEquals("New Project Test", found.get().getName());
-        Assert.assertEquals(ProjectStatus.NEW, found.get().getStatus());
+        Project project = found.get();
+        assertNotNull(project.getGroup(), "Group should be eagerly fetched by @EntityGraph");
+        assertNotNull(project.getGroup().getGroupLeader(), "Group leader should be eagerly fetched by @EntityGraph");
+        assertNotNull(project.getGroup().getGroupLeader().getVisa(), "Leader visa should be accessible after detach");
+        assertNotNull(project.getMembers(), "Members should be eagerly fetched by @EntityGraph");
+        assertFalse(project.getMembers().isEmpty(), "Project members should not be empty");
     }
 
     @Test
-    public void testFindWithQueryDSL() {
-        final String projectName = "QUERYDSL_PIM_PROJECT";
-        Project project = new Project(
-                2002,
-                projectName,
-                "Customer A",
-                ProjectStatus.PLA,
-                LocalDate.now(),
-                null,
-                defaultGroup
-        );
-        projectRepository.save(project);
-
-        Project found = new JPAQuery<Project>(em)
-                .from(QProject.project)
-                .where(QProject.project.name.eq(projectName))
-                .fetchFirst();
-
-        Assert.assertNotNull(found);
-        Assert.assertEquals(projectName, found.getName());
-        Assert.assertEquals(Integer.valueOf(2002), found.getProjectNumber());
+    @DisplayName("existsByProjectNumber: Returns true when project number exists")
+    void testExistsByProjectNumber_WhenExists_ReturnsTrue() {
+        // Project number 1001 is seeded in data.sql
+        boolean exists = projectRepository.existsByProjectNumber(1001);
+        assertTrue(exists, "Expected project number 1001 to exist");
     }
 
     @Test
-    public void testProjectMembersManyToMany() {
+    @DisplayName("existsByProjectNumber: Returns false when project number does not exist")
+    void testExistsByProjectNumber_WhenNotExists_ReturnsFalse() {
+        boolean exists = projectRepository.existsByProjectNumber(99999);
+        assertFalse(exists, "Expected project number 99999 to not exist");
+    }
+
+    @Test
+    @DisplayName("members ManyToMany: Successfully manage member relationships")
+    void testProjectMembersManyToMany() {
         Employee emp1 = employeeRepository.save(new Employee("EM1", "Emp", "One", LocalDate.of(1992, 2, 2)));
         Employee emp2 = employeeRepository.save(new Employee("EM2", "Emp", "Two", LocalDate.of(1993, 3, 3)));
 
@@ -114,129 +109,153 @@ public class ProjectRepositoryTest {
         em.clear();
 
         Project found = projectRepository.findById(saved.getId()).orElse(null);
-        Assert.assertNotNull(found);
-        Assert.assertEquals(2, found.getMembers().size());
+        assertNotNull(found);
+        assertEquals(2, found.getMembers().size());
     }
 
     @Test
-    public void testSearchProjects_ByKeywordName() {
-
-        List<Project> results = projectRepository.searchProjects("EFV", null);
-        Assert.assertEquals(1, results.size());
-        Assert.assertEquals(Integer.valueOf(1001), results.get(0).getProjectNumber());
-    }
-
-    @Test
-    public void testSearchProjects_ByKeywordCustomer() {
-
-        List<Project> results = projectRepository.searchProjects("Secutix", null);
-        Assert.assertEquals(1, results.size());
-        Assert.assertEquals("CRYSTAL BALL Analytics", results.get(0).getName());
-    }
-
-    @Test
-    public void testSearchProjects_ByProjectNumber() {
-        // Search by project number "1004"
-        List<Project> results = projectRepository.searchProjects("1004", null);
-        Assert.assertEquals(1, results.size());
-        Assert.assertEquals(Integer.valueOf(1004), results.get(0).getProjectNumber());
-    }
-
-    @Test
-    public void testSearchProjects_ByStatusOnly() {
-
-        List<Project> results = projectRepository.searchProjects(null, ProjectStatus.NEW);
-        Assert.assertEquals(5, results.size());
-        Assert.assertTrue(results.stream().allMatch(p -> p.getStatus() == ProjectStatus.NEW));
-
-        Assert.assertEquals(Integer.valueOf(1001), results.get(0).getProjectNumber());
-        Assert.assertEquals(Integer.valueOf(1014), results.get(4).getProjectNumber());
-    }
-
-    @Test
-    public void testSearchProjects_EmptyCriteria_ShouldReturnAllSortedAsc() {
-        List<Project> results = projectRepository.searchProjects("", null);
-        Assert.assertEquals(15, results.size());
-        Assert.assertEquals(Integer.valueOf(1001), results.get(0).getProjectNumber());
-        Assert.assertEquals(Integer.valueOf(1015), results.get(14).getProjectNumber());
-    }
-
-    @Test
-    public void testSearchProjects_WithCriteriaAndPagination() {
-        org.springframework.data.domain.Page<vn.elca.training.model.dto.response.ProjectSearchResultDto> page = projectRepository.searchProjects(
-                new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto(),
-                org.springframework.data.domain.PageRequest.of(0, 10)
+    @DisplayName("searchProjects: With default criteria and pagination")
+    void testSearchProjects_WithCriteriaAndPagination() {
+        Page<ProjectSearchResultDto> page = projectRepository.searchProjects(
+                new ProjectSearchCriteriaDto(),
+                PageRequest.of(0, 10)
         );
-        Assert.assertNotNull(page);
-        Assert.assertEquals(10, page.getContent().size());
-        vn.elca.training.model.dto.response.ProjectSearchResultDto firstItem = page.getContent().get(0);
-        Assert.assertNotNull(firstItem.getId());
-        Assert.assertNotNull(firstItem.getProjectNumber());
-        Assert.assertNotNull(firstItem.getName());
-        Assert.assertNotNull(firstItem.getCustomer());
-        Assert.assertNotNull(firstItem.getStatus());
-        Assert.assertNotNull(firstItem.getStartDate());
+        assertNotNull(page);
+        assertEquals(10, page.getContent().size());
+        ProjectSearchResultDto firstItem = page.getContent().get(0);
+        assertNotNull(firstItem.getId());
+        assertNotNull(firstItem.getProjectNumber());
+        assertNotNull(firstItem.getName());
+        assertNotNull(firstItem.getCustomer());
+        assertNotNull(firstItem.getStatus());
+        assertNotNull(firstItem.getStartDate());
     }
 
     @Test
-    public void testSearchProjects_ByGroupLeaderVisa() {
-        vn.elca.training.model.dto.request.ProjectSearchCriteriaDto criteria =
-                new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto();
+    @DisplayName("searchProjects: Filter by text keyword and project status")
+    void testSearchProjects_ByKeywordTextAndStatus() {
+        ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto();
+        criteria.setKeyword("EFV");
+        criteria.setStatus(ProjectStatus.NEW);
+
+        Page<ProjectSearchResultDto> page =
+                projectRepository.searchProjects(criteria, PageRequest.of(0, 10));
+
+        assertNotNull(page);
+        assertEquals(1, page.getTotalElements());
+        assertEquals(Integer.valueOf(1001), page.getContent().get(0).getProjectNumber());
+        assertEquals(ProjectStatus.NEW, page.getContent().get(0).getStatus());
+    }
+
+    @Test
+    @DisplayName("searchProjects: Filter by numeric project number keyword")
+    void testSearchProjects_ByProjectNumberKeyword() {
+        ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto();
+        criteria.setKeyword("1004");
+
+        Page<ProjectSearchResultDto> page =
+                projectRepository.searchProjects(criteria, PageRequest.of(0, 10));
+
+        assertNotNull(page);
+        assertEquals(1, page.getTotalElements());
+        assertEquals(Integer.valueOf(1004), page.getContent().get(0).getProjectNumber());
+    }
+
+    @Test
+    @DisplayName("searchProjects: Returns empty page when no match found")
+    void testSearchProjects_WhenNoMatch_ReturnsEmptyPage() {
+        ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto();
+        criteria.setKeyword("NONEXISTENT_PROJECT_KEYWORD");
+
+        Page<ProjectSearchResultDto> page =
+                projectRepository.searchProjects(criteria, PageRequest.of(0, 10));
+
+        assertNotNull(page);
+        assertEquals(0, page.getTotalElements());
+        assertTrue(page.getContent().isEmpty());
+    }
+
+    @Test
+    @DisplayName("searchProjects: Safely handles null criteria without exception")
+    void testSearchProjects_WhenCriteriaIsNull() {
+        Page<ProjectSearchResultDto> page =
+                projectRepository.searchProjects(null, PageRequest.of(0, 10));
+
+        assertNotNull(page);
+        assertEquals(10, page.getContent().size());
+        assertTrue(page.getTotalElements() >= 15);
+    }
+
+    @Test
+    @DisplayName("searchProjects: By group leader VISA")
+    void testSearchProjects_ByGroupLeaderVisa() {
+        ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto();
         criteria.setGroupLeaderVisa("PL1");
 
-        org.springframework.data.domain.Page<vn.elca.training.model.dto.response.ProjectSearchResultDto> page =
-                projectRepository.searchProjects(criteria, org.springframework.data.domain.PageRequest.of(0, 10));
+        Page<ProjectSearchResultDto> page =
+                projectRepository.searchProjects(criteria, PageRequest.of(0, 10));
 
-        Assert.assertNotNull(page);
-        Assert.assertTrue(page.getTotalElements() > 0);
+        assertNotNull(page);
+        assertTrue(page.getTotalElements() > 0);
     }
 
     @Test
-    public void testSearchProjects_ByMemberVisas() {
-        vn.elca.training.model.dto.request.ProjectSearchCriteriaDto criteria =
-                new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto();
-        criteria.setMemberVisas(java.util.Set.of("DTH"));
+    @DisplayName("searchProjects: By member VISAs including blank entries")
+    void testSearchProjects_ByMemberVisas() {
+        ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto();
+        Set<String> visas = new HashSet<>();
+        visas.add("DTH");
+        visas.add("   ");
+        visas.add("");
+        criteria.setMemberVisas(visas);
 
-        org.springframework.data.domain.Page<vn.elca.training.model.dto.response.ProjectSearchResultDto> page =
-                projectRepository.searchProjects(criteria, org.springframework.data.domain.PageRequest.of(0, 10));
+        Page<ProjectSearchResultDto> page =
+                projectRepository.searchProjects(criteria, PageRequest.of(0, 10));
 
-        Assert.assertNotNull(page);
-        Assert.assertTrue(page.getTotalElements() > 0);
+        assertNotNull(page);
+        assertTrue(page.getTotalElements() > 0);
     }
 
     @Test
-    public void testSearchProjects_ByDateRanges() {
-        vn.elca.training.model.dto.request.ProjectSearchCriteriaDto criteria =
-                new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto();
-        criteria.setStartDateFrom(java.time.LocalDate.of(2010, 1, 1));
-        criteria.setStartDateTo(java.time.LocalDate.of(2030, 12, 31));
-        criteria.setEndDateFrom(java.time.LocalDate.of(2010, 1, 1));
-        criteria.setEndDateTo(java.time.LocalDate.of(2030, 12, 31));
+    @DisplayName("searchProjects: By date ranges")
+    void testSearchProjects_ByDateRanges() {
+        ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto();
+        criteria.setStartDateFrom(LocalDate.of(2010, 1, 1));
+        criteria.setStartDateTo(LocalDate.of(2030, 12, 31));
+        criteria.setEndDateFrom(LocalDate.of(2010, 1, 1));
+        criteria.setEndDateTo(LocalDate.of(2030, 12, 31));
 
-        org.springframework.data.domain.Page<vn.elca.training.model.dto.response.ProjectSearchResultDto> page =
-                projectRepository.searchProjects(criteria, org.springframework.data.domain.PageRequest.of(0, 10));
+        Page<ProjectSearchResultDto> page =
+                projectRepository.searchProjects(criteria, PageRequest.of(0, 10));
 
-        Assert.assertNotNull(page);
+        assertNotNull(page);
     }
 
     @Test
-    public void testSearchProjects_WithSortingVariants() {
-        org.springframework.data.domain.Sort[] sorts = new org.springframework.data.domain.Sort[]{
-                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "name"),
-                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "customer"),
-                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "status"),
-                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "startDate"),
-                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "projectNumber")
+    @DisplayName("searchProjects: With sorting variants covering ASC, DESC and Unsorted")
+    void testSearchProjects_WithSortingVariants() {
+        Sort[] sorts = new Sort[]{
+                Sort.by(Sort.Direction.ASC, "name"),
+                Sort.by(Sort.Direction.DESC, "name"),
+                Sort.by(Sort.Direction.ASC, "customer"),
+                Sort.by(Sort.Direction.DESC, "customer"),
+                Sort.by(Sort.Direction.ASC, "status"),
+                Sort.by(Sort.Direction.DESC, "status"),
+                Sort.by(Sort.Direction.ASC, "startDate"),
+                Sort.by(Sort.Direction.DESC, "startDate"),
+                Sort.by(Sort.Direction.ASC, "projectNumber"),
+                Sort.by(Sort.Direction.DESC, "projectNumber"),
+                Sort.unsorted()
         };
 
-        for (org.springframework.data.domain.Sort sort : sorts) {
-            org.springframework.data.domain.Page<vn.elca.training.model.dto.response.ProjectSearchResultDto> page =
+        for (Sort sort : sorts) {
+            Page<ProjectSearchResultDto> page =
                     projectRepository.searchProjects(
-                            new vn.elca.training.model.dto.request.ProjectSearchCriteriaDto(),
-                            org.springframework.data.domain.PageRequest.of(0, 5, sort)
+                            new ProjectSearchCriteriaDto(),
+                            PageRequest.of(0, 5, sort)
                     );
-            Assert.assertNotNull(page);
-            Assert.assertEquals(5, page.getContent().size());
+            assertNotNull(page);
+            assertEquals(5, page.getContent().size());
         }
     }
 }
