@@ -166,7 +166,6 @@ public class ProjectServiceImpl implements ProjectService {
         project.setStartDate(dto.getStartDate());
         project.setEndDate(dto.getEndDate());
         project.setStatus(dto.getStatus() != null ? dto.getStatus() : ProjectStatus.NEW);
-        project.setVersion(dto.getVersion());
 
         Group group = groupRepository.findById(dto.getGroupId())
                 .orElseThrow(() -> new IllegalArgumentException("Group not found with id: " + dto.getGroupId()));
