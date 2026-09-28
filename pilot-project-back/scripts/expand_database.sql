@@ -1,0 +1,158 @@
+-- ==============================================================================
+-- PIM TOOL - SCRIPT MỞ RỘNG CƠ SỞ DỮ LIỆU LÊN GẤP ĐÔI (DATABASE SCALE SCRIPT x2)
+-- ==============================================================================
+-- Thống kê mở rộng:
+--   - Nhân viên (EMPLOYEE):        9  -> 18 (+9 nhân viên mới)
+--   - Nhóm (GROUP):                2  -> 4  (+2 nhóm mới)
+--   - Dự án (PROJECT):            15  -> 30 (+15 dự án mới, từ 1016 đến 1030)
+--   - Thành viên (PROJECT_MEMBER): 28  -> 63 (+35 liên kết thành viên mới)
+--
+-- Hướng dẫn thực thi:
+--   Script này có thể chạy trực tiếp trên H2 Console (http://localhost:8080/h2console/)
+--   hoặc bất kỳ công cụ quản lý CSDL nào (DBeaver, IntelliJ Database Tool, SQL CLI).
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- 1. THÊM 9 NHÂN VIÊN MỚI (Từ ID 10 đến 18)
+-- ------------------------------------------------------------------------------
+INSERT INTO EMPLOYEE (VISA, FIRST_NAME, LAST_NAME, BIRTH_DATE, VERSION) VALUES
+('PL3', 'Project', 'Leader 3', '1986-04-12', 0),
+('PL4', 'Project', 'Leader 4', '1989-10-05', 0),
+('KMA', 'Marc', 'Keller', '1991-03-18', 0),
+('SME', 'Sophie', 'Meyer', '1993-08-24', 0),
+('PDU', 'Pierre', 'Dubois', '1990-06-11', 0),
+('CBE', 'Celine', 'Bernard', '1992-12-03', 0),
+('TMO', 'Thomas', 'Morel', '1988-09-29', 0),
+('LRO', 'Lucas', 'Roux', '1994-02-14', 0),
+('EFO', 'Emma', 'Fournier', '1996-07-08', 0);
+
+-- ------------------------------------------------------------------------------
+-- 2. THÊM 2 NHÓM MỚI (Từ ID 3 đến 4, Trưởng nhóm là PL3 và PL4)
+-- ------------------------------------------------------------------------------
+-- Nhóm 3: Leader là PL3 (Employee ID 10)
+-- Nhóm 4: Leader là PL4 (Employee ID 11)
+INSERT INTO "group" (GROUP_LEADER_ID, VERSION) VALUES
+((SELECT ID FROM EMPLOYEE WHERE VISA = 'PL3'), 0),
+((SELECT ID FROM EMPLOYEE WHERE VISA = 'PL4'), 0);
+
+-- ------------------------------------------------------------------------------
+-- 3. THÊM 15 DỰ ÁN MỚI (Từ PROJECT_NUMBER 1016 đến 1030, ID 16 đến 30)
+-- ------------------------------------------------------------------------------
+INSERT INTO PROJECT (PROJECT_NUMBER, NAME, CUSTOMER, STATUS, START_DATE, END_DATE, GROUP_ID, VERSION) VALUES
+(1016, 'Rolex Inventory Management', 'Rolex SA', 'NEW', '2022-03-01', '2022-12-31', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL3'), 0),
+
+(1017, 'ABB Robotics Controller', 'ABB Group', 'PLA', '2022-04-01', '2023-04-30', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL3'), 0),
+
+(1018, 'Swatch eCommerce Platform', 'Swatch Group', 'INP', '2022-05-15', '2023-05-15', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL3'), 0),
+
+(1019, 'Swiss Re Risk Modeling', 'Swiss Re', 'FIN', '2021-01-15', '2021-11-30', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL4'), 0),
+
+(1020, 'Givaudan Flavor Catalog', 'Givaudan', 'NEW', '2022-06-01', NULL, 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL4'), 0),
+
+(1021, 'Lonza Biologics Tracking', 'Lonza Group', 'PLA', '2022-07-01', '2023-01-31', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL3'), 0),
+
+(1022, 'Geberit Smart Sanitary IoT', 'Geberit AG', 'INP', '2022-08-15', '2023-08-15', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL4'), 0),
+
+(1023, 'Kuehne Nagel Freight Portal', 'Kuehne Nagel', 'FIN', '2021-03-01', '2021-12-15', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL3'), 0),
+
+(1024, 'Holcim Cement Dispatch', 'Holcim Ltd', 'NEW', '2022-09-01', '2023-03-31', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL4'), 0),
+
+(1025, 'Schindler Elevator Dispatch', 'Schindler Group', 'PLA', '2022-10-01', '2023-10-31', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL3'), 0),
+
+(1026, 'Straumann Dental Cloud', 'Straumann Holding', 'INP', '2022-11-01', NULL, 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL4'), 0),
+
+(1027, 'Swiss Life Pension Portal', 'Swiss Life', 'FIN', '2021-05-01', '2022-02-28', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL3'), 0),
+
+(1028, 'Alcon Vision Care System', 'Alcon Inc', 'NEW', '2023-01-10', '2023-12-20', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL4'), 0),
+
+(1029, 'Kudelski Nagra CyberSec', 'Kudelski Group', 'PLA', '2023-02-01', '2023-11-30', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL3'), 0),
+
+(1030, 'Pictet Asset Reporting', 'Pictet Group', 'INP', '2023-03-01', '2024-03-01', 
+    (SELECT g.ID FROM "group" g JOIN EMPLOYEE e ON g.GROUP_LEADER_ID = e.ID WHERE e.VISA = 'PL4'), 0);
+
+-- ------------------------------------------------------------------------------
+-- 4. THÊM 35 LIÊN KẾT THÀNH VIÊN CHO CÁC DỰ ÁN MỚI (PROJECT_EMPLOYEE)
+-- ------------------------------------------------------------------------------
+INSERT INTO PROJECT_EMPLOYEE (PROJECT_ID, EMPLOYEE_ID) VALUES
+-- Dự án 1016
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1016), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL3')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1016), (SELECT ID FROM EMPLOYEE WHERE VISA = 'KMA')),
+
+-- Dự án 1017
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1017), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL3')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1017), (SELECT ID FROM EMPLOYEE WHERE VISA = 'SME')),
+
+-- Dự án 1018
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1018), (SELECT ID FROM EMPLOYEE WHERE VISA = 'KMA')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1018), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PDU')),
+
+-- Dự án 1019
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1019), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL4')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1019), (SELECT ID FROM EMPLOYEE WHERE VISA = 'CBE')),
+
+-- Dự án 1020
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1020), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL4')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1020), (SELECT ID FROM EMPLOYEE WHERE VISA = 'TMO')),
+
+-- Dự án 1021
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1021), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL3')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1021), (SELECT ID FROM EMPLOYEE WHERE VISA = 'SME')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1021), (SELECT ID FROM EMPLOYEE WHERE VISA = 'LRO')),
+
+-- Dự án 1022
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1022), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL4')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1022), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PDU')),
+
+-- Dự án 1023
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1023), (SELECT ID FROM EMPLOYEE WHERE VISA = 'KMA')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1023), (SELECT ID FROM EMPLOYEE WHERE VISA = 'CBE')),
+
+-- Dự án 1024
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1024), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL4')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1024), (SELECT ID FROM EMPLOYEE WHERE VISA = 'TMO')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1024), (SELECT ID FROM EMPLOYEE WHERE VISA = 'EFO')),
+
+-- Dự án 1025
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1025), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL3')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1025), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PDU')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1025), (SELECT ID FROM EMPLOYEE WHERE VISA = 'DTH')),
+
+-- Dự án 1026
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1026), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL4')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1026), (SELECT ID FROM EMPLOYEE WHERE VISA = 'LRO')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1026), (SELECT ID FROM EMPLOYEE WHERE VISA = 'BHU')),
+
+-- Dự án 1027
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1027), (SELECT ID FROM EMPLOYEE WHERE VISA = 'KMA')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1027), (SELECT ID FROM EMPLOYEE WHERE VISA = 'EFO')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1027), (SELECT ID FROM EMPLOYEE WHERE VISA = 'JHV')),
+
+-- Dự án 1028
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1028), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL4')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1028), (SELECT ID FROM EMPLOYEE WHERE VISA = 'SME')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1028), (SELECT ID FROM EMPLOYEE WHERE VISA = 'NNQ')),
+
+-- Dự án 1029
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1029), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL3')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1029), (SELECT ID FROM EMPLOYEE WHERE VISA = 'CBE')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1029), (SELECT ID FROM EMPLOYEE WHERE VISA = 'TVA')),
+
+-- Dự án 1030
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1030), (SELECT ID FROM EMPLOYEE WHERE VISA = 'PL4')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1030), (SELECT ID FROM EMPLOYEE WHERE VISA = 'TMO')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1030), (SELECT ID FROM EMPLOYEE WHERE VISA = 'EFO')),
+((SELECT ID FROM PROJECT WHERE PROJECT_NUMBER = 1030), (SELECT ID FROM EMPLOYEE WHERE VISA = 'LTM'));

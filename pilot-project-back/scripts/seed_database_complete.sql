@@ -1,0 +1,142 @@
+-- ==============================================================================
+-- PIM TOOL - TOÀN BỘ DỮ LIỆU SEED HOÀN CHỈNH (FULL SEED DATA - 30 PROJECTS)
+-- ==============================================================================
+-- Tập dữ liệu này đã được mở rộng gấp đôi:
+--   - 18 Nhân viên (EMPLOYEE)
+--   - 4 Nhóm (GROUP)
+--   - 30 Dự án (PROJECT: 1001 -> 1030)
+--   - 63 Liên kết thành viên (PROJECT_EMPLOYEE)
+--
+-- Dùng để khởi tạo toàn bộ CSDL từ đầu cho môi trường dev/test.
+-- ==============================================================================
+
+-- 1. Employees (18 nhân viên)
+INSERT INTO EMPLOYEE (VISA, FIRST_NAME, LAST_NAME, BIRTH_DATE, VERSION) VALUES
+('DTH', 'Duc Thinh', 'Ha', '1990-01-15', 0),
+('BHU', 'Bao Huy', 'Nguyen', '1992-05-20', 0),
+('JHV', 'Jean-Henri', 'Vu', '1988-11-10', 0),
+('NNQ', 'Nhu Quoc', 'Nguyen', '1995-04-11', 0),
+('PL1', 'Project', 'Leader 1', '1985-08-25', 0),
+('PL2', 'Project', 'Leader 2', '1987-03-30', 0),
+('TVA', 'Van Anh', 'Tran', '1993-07-14', 0),
+('LTM', 'Thi Mai', 'Le', '1994-09-22', 0),
+('NVA', 'Van An', 'Nguyen', '1991-12-05', 0),
+('PL3', 'Project', 'Leader 3', '1986-04-12', 0),
+('PL4', 'Project', 'Leader 4', '1989-10-05', 0),
+('KMA', 'Marc', 'Keller', '1991-03-18', 0),
+('SME', 'Sophie', 'Meyer', '1993-08-24', 0),
+('PDU', 'Pierre', 'Dubois', '1990-06-11', 0),
+('CBE', 'Celine', 'Bernard', '1992-12-03', 0),
+('TMO', 'Thomas', 'Morel', '1988-09-29', 0),
+('LRO', 'Lucas', 'Roux', '1994-02-14', 0),
+('EFO', 'Emma', 'Fournier', '1996-07-08', 0);
+
+-- 2. Groups (4 nhóm)
+INSERT INTO "group" (GROUP_LEADER_ID, VERSION) VALUES
+(5, 0),
+(6, 0),
+(10, 0),
+(11, 0);
+
+-- 3. Projects (30 dự án)
+INSERT INTO PROJECT (PROJECT_NUMBER, NAME, CUSTOMER, STATUS, START_DATE, END_DATE, GROUP_ID, VERSION) VALUES
+(1001, 'EFV Core Banking', 'EFV', 'NEW', '2021-01-01', '2021-12-31', 1, 0),
+(1002, 'CXTRANET Portal', 'ELCA', 'PLA', '2021-02-01', '2021-10-30', 1, 0),
+(1003, 'CRYSTAL BALL Analytics', 'Secutix', 'INP', '2021-03-15', NULL, 2, 0),
+(1004, 'IOC Client Extranet', 'IOC', 'FIN', '2020-05-01', '2020-12-31', 2, 0),
+(1005, 'TRADEECO Marketplace', 'TradeEco', 'NEW', '2021-06-01', '2022-06-01', 1, 0),
+(1006, 'Securitas Identity Access', 'Securitas Direct', 'NEW', '2021-07-01', '2022-03-31', 1, 0),
+(1007, 'Swisscom Cloud Migration', 'Swisscom AG', 'PLA', '2021-08-15', '2022-12-31', 2, 0),
+(1008, 'Nestle Supply Chain ERP', 'Nestle Global', 'INP', '2021-09-01', '2023-06-30', 1, 0),
+(1009, 'Roche Clinical Analytics', 'Roche Holding', 'FIN', '2020-02-10', '2021-05-20', 2, 0),
+(1010, 'Zurich Insurance Telematics', 'Zurich Insurance', 'NEW', '2021-10-01', NULL, 1, 0),
+(1011, 'Novartis Bio-Informatics', 'Novartis Pharma', 'PLA', '2021-11-15', '2022-08-30', 2, 0),
+(1012, 'SBB Railway Timetable V2', 'SBB CFF FFS', 'INP', '2021-12-01', '2023-01-15', 1, 0),
+(1013, 'UBS Wealth Management API', 'UBS Bank', 'FIN', '2019-11-01', '2020-10-31', 2, 0),
+(1014, 'Logitech Peripheral Firmware', 'Logitech Intl', 'NEW', '2022-01-10', '2022-09-30', 1, 0),
+(1015, 'PostFinance Payment Gateway', 'PostFinance', 'INP', '2022-02-01', '2022-11-30', 2, 0),
+(1016, 'Rolex Inventory Management', 'Rolex SA', 'NEW', '2022-03-01', '2022-12-31', 3, 0),
+(1017, 'ABB Robotics Controller', 'ABB Group', 'PLA', '2022-04-01', '2023-04-30', 3, 0),
+(1018, 'Swatch eCommerce Platform', 'Swatch Group', 'INP', '2022-05-15', '2023-05-15', 3, 0),
+(1019, 'Swiss Re Risk Modeling', 'Swiss Re', 'FIN', '2021-01-15', '2021-11-30', 4, 0),
+(1020, 'Givaudan Flavor Catalog', 'Givaudan', 'NEW', '2022-06-01', NULL, 4, 0),
+(1021, 'Lonza Biologics Tracking', 'Lonza Group', 'PLA', '2022-07-01', '2023-01-31', 3, 0),
+(1022, 'Geberit Smart Sanitary IoT', 'Geberit AG', 'INP', '2022-08-15', '2023-08-15', 4, 0),
+(1023, 'Kuehne Nagel Freight Portal', 'Kuehne Nagel', 'FIN', '2021-03-01', '2021-12-15', 3, 0),
+(1024, 'Holcim Cement Dispatch', 'Holcim Ltd', 'NEW', '2022-09-01', '2023-03-31', 4, 0),
+(1025, 'Schindler Elevator Dispatch', 'Schindler Group', 'PLA', '2022-10-01', '2023-10-31', 3, 0),
+(1026, 'Straumann Dental Cloud', 'Straumann Holding', 'INP', '2022-11-01', NULL, 4, 0),
+(1027, 'Swiss Life Pension Portal', 'Swiss Life', 'FIN', '2021-05-01', '2022-02-28', 3, 0),
+(1028, 'Alcon Vision Care System', 'Alcon Inc', 'NEW', '2023-01-10', '2023-12-20', 4, 0),
+(1029, 'Kudelski Nagra CyberSec', 'Kudelski Group', 'PLA', '2023-02-01', '2023-11-30', 3, 0),
+(1030, 'Pictet Asset Reporting', 'Pictet Group', 'INP', '2023-03-01', '2024-03-01', 4, 0);
+
+-- 4. Project Members (63 liên kết)
+INSERT INTO PROJECT_EMPLOYEE (PROJECT_ID, EMPLOYEE_ID) VALUES
+(1, 1),
+(1, 2),
+(2, 2),
+(2, 3),
+(3, 1),
+(3, 4),
+(5, 4),
+(6, 1),
+(6, 7),
+(7, 2),
+(7, 3),
+(7, 8),
+(8, 4),
+(8, 9),
+(9, 1),
+(9, 3),
+(10, 2),
+(10, 4),
+(11, 7),
+(11, 8),
+(12, 1),
+(12, 9),
+(13, 3),
+(13, 4),
+(14, 2),
+(14, 7),
+(15, 8),
+(15, 9),
+(16, 10),
+(16, 12),
+(17, 10),
+(17, 13),
+(18, 12),
+(18, 14),
+(19, 11),
+(19, 15),
+(20, 11),
+(20, 16),
+(21, 10),
+(21, 13),
+(21, 17),
+(22, 11),
+(22, 14),
+(23, 12),
+(23, 15),
+(24, 11),
+(24, 16),
+(24, 18),
+(25, 10),
+(25, 14),
+(25, 1),
+(26, 11),
+(26, 17),
+(26, 2),
+(27, 12),
+(27, 18),
+(27, 3),
+(28, 11),
+(28, 13),
+(28, 4),
+(29, 10),
+(29, 15),
+(29, 7),
+(30, 11),
+(30, 16),
+(30, 18),
+(30, 8);
