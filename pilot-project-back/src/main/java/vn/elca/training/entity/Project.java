@@ -1,4 +1,4 @@
-package vn.elca.training.model.entity;
+package vn.elca.training.entity;
 
 import org.hibernate.annotations.BatchSize;
 

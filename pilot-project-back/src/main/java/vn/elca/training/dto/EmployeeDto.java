@@ -1,4 +1,4 @@
-package vn.elca.training.model.dto;
+package vn.elca.training.dto;
 
 public class EmployeeDto {
     private Long id;

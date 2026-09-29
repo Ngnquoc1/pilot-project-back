@@ -1,4 +1,4 @@
-package vn.elca.training.model.exception;
+package vn.elca.training.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

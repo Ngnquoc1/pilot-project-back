@@ -1,12 +1,12 @@
 package vn.elca.training.service;
 
 import org.springframework.data.domain.Pageable;
-import vn.elca.training.model.dto.request.ProjectRequestDto;
-import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
-import vn.elca.training.model.dto.response.PageResponseDto;
-import vn.elca.training.model.dto.response.ProjectDeleteResponseDto;
-import vn.elca.training.model.dto.response.ProjectResponseDto;
-import vn.elca.training.model.dto.response.ProjectSearchResultDto;
+import vn.elca.training.dto.request.ProjectRequestDto;
+import vn.elca.training.dto.request.ProjectSearchCriteriaDto;
+import vn.elca.training.dto.response.PageResponseDto;
+import vn.elca.training.dto.response.ProjectDeleteResponseDto;
+import vn.elca.training.dto.response.ProjectResponseDto;
+import vn.elca.training.dto.response.ProjectSearchResultDto;
 
 import java.util.List;
 

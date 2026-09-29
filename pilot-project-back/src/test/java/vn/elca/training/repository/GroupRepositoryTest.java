@@ -9,7 +9,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import vn.elca.training.ApplicationWebConfig;
-import vn.elca.training.model.entity.Group;
+import vn.elca.training.entity.Group;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;

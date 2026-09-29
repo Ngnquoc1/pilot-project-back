@@ -1,7 +1,7 @@
-package vn.elca.training.model.dto.request;
+package vn.elca.training.dto.request;
 
 import org.springframework.format.annotation.DateTimeFormat;
-import vn.elca.training.model.entity.ProjectStatus;
+import vn.elca.training.entity.ProjectStatus;
 
 import java.time.LocalDate;
 import java.util.HashSet;

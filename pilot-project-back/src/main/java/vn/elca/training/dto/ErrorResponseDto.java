@@ -1,4 +1,4 @@
-package vn.elca.training.model.dto;
+package vn.elca.training.dto;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;

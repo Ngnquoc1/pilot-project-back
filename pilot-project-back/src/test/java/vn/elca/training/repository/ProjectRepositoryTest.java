@@ -12,9 +12,12 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import vn.elca.training.ApplicationWebConfig;
-import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
-import vn.elca.training.model.dto.response.ProjectSearchResultDto;
-import vn.elca.training.model.entity.*;
+import vn.elca.training.dto.request.ProjectSearchCriteriaDto;
+import vn.elca.training.dto.response.ProjectSearchResultDto;
+import vn.elca.training.entity.Employee;
+import vn.elca.training.entity.Group;
+import vn.elca.training.entity.Project;
+import vn.elca.training.entity.ProjectStatus;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -214,6 +217,23 @@ public class ProjectRepositoryTest {
 
         assertNotNull(page);
         assertTrue(page.getTotalElements() > 0);
+    }
+
+    @Test
+    @DisplayName("searchProjects: Match projects containing ALL specified members (AND logic)")
+    void testSearchProjects_ByMultipleMemberVisas_MustContainAll() {
+        ProjectSearchCriteriaDto criteria = new ProjectSearchCriteriaDto();
+        Set<String> visas = new HashSet<>();
+        visas.add("DTH");
+        visas.add("BHU");
+        criteria.setMemberVisas(visas);
+
+        Page<ProjectSearchResultDto> page =
+                projectRepository.searchProjects(criteria, PageRequest.of(0, 10));
+
+        assertNotNull(page);
+        assertEquals(1, page.getTotalElements(), "Only project 1001 contains BOTH DTH and BHU");
+        assertEquals(1001, page.getContent().get(0).getProjectNumber());
     }
 
     @Test

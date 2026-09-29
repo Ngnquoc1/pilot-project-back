@@ -1,12 +1,12 @@
 package vn.elca.training.util;
 
 import org.springframework.stereotype.Component;
-import vn.elca.training.model.dto.EmployeeDto;
-import vn.elca.training.model.dto.GroupDto;
-import vn.elca.training.model.dto.response.ProjectResponseDto;
-import vn.elca.training.model.entity.Employee;
-import vn.elca.training.model.entity.Group;
-import vn.elca.training.model.entity.Project;
+import vn.elca.training.dto.EmployeeDto;
+import vn.elca.training.dto.GroupDto;
+import vn.elca.training.dto.response.ProjectResponseDto;
+import vn.elca.training.entity.Employee;
+import vn.elca.training.entity.Group;
+import vn.elca.training.entity.Project;
 
 import java.util.stream.Collectors;
 

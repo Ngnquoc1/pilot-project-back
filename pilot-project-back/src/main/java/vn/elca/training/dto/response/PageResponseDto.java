@@ -1,4 +1,4 @@
-package vn.elca.training.model.dto.response;
+package vn.elca.training.dto.response;
 
 import java.util.List;
 

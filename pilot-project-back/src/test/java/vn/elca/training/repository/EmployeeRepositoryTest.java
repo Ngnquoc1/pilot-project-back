@@ -8,7 +8,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import vn.elca.training.ApplicationWebConfig;
-import vn.elca.training.model.entity.Employee;
+import vn.elca.training.entity.Employee;
 
 import java.time.LocalDate;
 import java.util.Arrays;

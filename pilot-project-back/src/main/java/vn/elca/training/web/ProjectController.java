@@ -8,12 +8,12 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vn.elca.training.model.dto.request.ProjectRequestDto;
-import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
-import vn.elca.training.model.dto.response.PageResponseDto;
-import vn.elca.training.model.dto.response.ProjectDeleteResponseDto;
-import vn.elca.training.model.dto.response.ProjectResponseDto;
-import vn.elca.training.model.dto.response.ProjectSearchResultDto;
+import vn.elca.training.dto.request.ProjectRequestDto;
+import vn.elca.training.dto.request.ProjectSearchCriteriaDto;
+import vn.elca.training.dto.response.PageResponseDto;
+import vn.elca.training.dto.response.ProjectDeleteResponseDto;
+import vn.elca.training.dto.response.ProjectResponseDto;
+import vn.elca.training.dto.response.ProjectSearchResultDto;
 import vn.elca.training.service.ProjectService;
 
 import java.util.List;

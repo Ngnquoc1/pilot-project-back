@@ -11,19 +11,19 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import vn.elca.training.model.dto.request.ProjectRequestDto;
-import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
-import vn.elca.training.model.dto.response.PageResponseDto;
-import vn.elca.training.model.dto.response.ProjectDeleteResponseDto;
-import vn.elca.training.model.dto.response.ProjectResponseDto;
-import vn.elca.training.model.entity.Employee;
-import vn.elca.training.model.entity.Group;
-import vn.elca.training.model.entity.Project;
-import vn.elca.training.model.entity.ProjectStatus;
+import vn.elca.training.dto.request.ProjectRequestDto;
+import vn.elca.training.dto.request.ProjectSearchCriteriaDto;
+import vn.elca.training.dto.response.PageResponseDto;
+import vn.elca.training.dto.response.ProjectDeleteResponseDto;
+import vn.elca.training.dto.response.ProjectResponseDto;
+import vn.elca.training.entity.Employee;
+import vn.elca.training.entity.Group;
+import vn.elca.training.entity.Project;
+import vn.elca.training.entity.ProjectStatus;
 import org.springframework.dao.DataIntegrityViolationException;
-import vn.elca.training.model.exception.InvalidProjectStatusForDeletionException;
-import vn.elca.training.model.exception.ProjectNotFoundException;
-import vn.elca.training.model.exception.ProjectNumberAlreadyException;
+import vn.elca.training.exception.InvalidProjectStatusForDeletionException;
+import vn.elca.training.exception.ProjectNotFoundException;
+import vn.elca.training.exception.ProjectNumberAlreadyException;
 import vn.elca.training.repository.EmployeeRepository;
 import vn.elca.training.repository.GroupRepository;
 import vn.elca.training.repository.ProjectRepository;
@@ -32,18 +32,16 @@ import vn.elca.training.validator.ProjectValidator;
 
 import java.time.LocalDate;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 import org.mockito.Spy;
-import vn.elca.training.model.dto.response.ProjectSearchResultDto;
+import vn.elca.training.dto.response.ProjectSearchResultDto;
 import vn.elca.training.util.ApplicationMapper;
 
 @ExtendWith(MockitoExtension.class)

@@ -1,7 +1,7 @@
-package vn.elca.training.model.dto.response;
+package vn.elca.training.dto.response;
 
-import vn.elca.training.model.dto.EmployeeDto;
-import vn.elca.training.model.entity.ProjectStatus;
+import vn.elca.training.dto.EmployeeDto;
+import vn.elca.training.entity.ProjectStatus;
 
 import java.time.LocalDate;
 import java.util.HashSet;

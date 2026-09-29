@@ -5,8 +5,8 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
-import vn.elca.training.model.entity.Employee;
-import vn.elca.training.model.entity.QEmployee;
+import vn.elca.training.entity.Employee;
+import vn.elca.training.entity.QEmployee;
 
 import java.util.Collections;
 import java.util.List;

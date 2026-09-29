@@ -11,14 +11,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import com.querydsl.core.types.Projections;
-import vn.elca.training.model.dto.request.ProjectSearchCriteriaDto;
-import vn.elca.training.model.dto.response.ProjectSearchResultDto;
-import vn.elca.training.model.entity.ProjectStatus;
-import vn.elca.training.model.entity.QProject;
+import com.querydsl.jpa.JPAExpressions;
+import vn.elca.training.dto.request.ProjectSearchCriteriaDto;
+import vn.elca.training.dto.response.ProjectSearchResultDto;
+import vn.elca.training.entity.QEmployee;
+import vn.elca.training.entity.QProject;
+import java.util.stream.Collectors;
 
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -96,18 +97,27 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
             builder.and(qProject.group.groupLeader.visa.equalsIgnoreCase(criteria.getGroupLeaderVisa().trim()));
         }
 
-        // Member Visa
+        // Member Visa: Match projects containing ALL specified members (Relational Division via GROUP BY + HAVING COUNT)
         if (criteria.getMemberVisas() != null && !criteria.getMemberVisas().isEmpty()) {
-            Set<String> visas = criteria.getMemberVisas();
+            Set<String> cleanVisas = criteria.getMemberVisas().stream()
+                    .filter(StringUtils::isNotBlank)
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet());
 
-            BooleanBuilder memberBuilder = new BooleanBuilder();
-            for (String v : visas) {
-                if (StringUtils.isNotBlank(v)) {
-                    memberBuilder.or(qProject.members.any().visa.equalsIgnoreCase(v.trim()));
-                }
-            }
-            if (memberBuilder.hasValue()) {
-                builder.and(memberBuilder);
+            if (!cleanVisas.isEmpty()) {
+                QProject subProject = new QProject("subProject");
+                QEmployee subEmployee = new QEmployee("subEmployee");
+
+                builder.and(qProject.id.in(
+                        JPAExpressions
+                                .select(subProject.id)
+                                .from(subProject)
+                                .join(subProject.members, subEmployee)
+                                .where(subEmployee.visa.toLowerCase().in(cleanVisas))
+                                .groupBy(subProject.id)
+                                .having(subEmployee.id.countDistinct().eq((long) cleanVisas.size()))
+                ));
             }
         }
 

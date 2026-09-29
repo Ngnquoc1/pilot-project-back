@@ -4,7 +4,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.stereotype.Repository;
-import vn.elca.training.model.entity.Group;
+import vn.elca.training.entity.Group;
 
 import java.util.List;
 

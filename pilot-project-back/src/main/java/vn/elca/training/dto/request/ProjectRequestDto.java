@@ -1,44 +1,43 @@
-package vn.elca.training.model.dto.response;
+package vn.elca.training.dto.request;
 
-import vn.elca.training.model.entity.ProjectStatus;
+import vn.elca.training.entity.ProjectStatus;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * Lightweight DTO representing a project item in search results.
- * Contains only the fields required for list/search display without lazy loading overhead.
+ * Request DTO for creating and updating a Project.
+ * Contains only input fields needed from the client, avoiding redundant data.
  *
  * @author nnnq
  */
-public class ProjectSearchResultDto {
-    private Long id;
+public class ProjectRequestDto {
     private Integer projectNumber;
     private String name;
     private String customer;
     private ProjectStatus status;
     private LocalDate startDate;
+    private LocalDate endDate;
+    private Long groupId;
+    private Set<String> memberVisas = new HashSet<>();
     private Long version;
 
-    public ProjectSearchResultDto() {
+    public ProjectRequestDto() {
     }
 
-    public ProjectSearchResultDto(Long id, Integer projectNumber, String name, String customer,
-                                  ProjectStatus status, LocalDate startDate, Long version) {
-        this.id = id;
+    public ProjectRequestDto(Integer projectNumber, String name, String customer, ProjectStatus status,
+                             LocalDate startDate, LocalDate endDate, Long groupId,
+                             Set<String> memberVisas, Long version) {
         this.projectNumber = projectNumber;
         this.name = name;
         this.customer = customer;
         this.status = status;
         this.startDate = startDate;
+        this.endDate = endDate;
+        this.groupId = groupId;
+        this.memberVisas = memberVisas != null ? memberVisas : new HashSet<>();
         this.version = version;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public Integer getProjectNumber() {
@@ -79,6 +78,30 @@ public class ProjectSearchResultDto {
 
     public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public Long getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(Long groupId) {
+        this.groupId = groupId;
+    }
+
+    public Set<String> getMemberVisas() {
+        return memberVisas;
+    }
+
+    public void setMemberVisas(Set<String> memberVisas) {
+        this.memberVisas = memberVisas;
     }
 
     public Long getVersion() {

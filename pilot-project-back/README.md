@@ -178,11 +178,11 @@ Kiểm tra mã lỗi trả về từ Windows Socket API là mã lỗi **`11050` 
 ### Mô tả lỗi
 Khi xây dựng endpoint RESTful API lấy chi tiết dự án (`GET /projects/{id}`) hoặc tìm kiếm dự án, hệ thống ném ngoại lệ thời gian chạy:
 ```text
-org.hibernate.LazyInitializationException: could not initialize proxy [vn.elca.training.model.entity.Group#1] - no Session
+org.hibernate.LazyInitializationException: could not initialize proxy [vn.elca.training.entity.Group#1] - no Session
 	at org.hibernate.proxy.AbstractLazyInitializer.initialize(AbstractLazyInitializer.java:169)
 	at org.hibernate.proxy.AbstractLazyInitializer.getImplementation(AbstractLazyInitializer.java:309)
 	at org.hibernate.proxy.pojo.bytebuddy.ByteBuddyInterceptor.intercept(ByteBuddyInterceptor.java:45)
-	at vn.elca.training.model.entity.Group$HibernateProxy$m4J1e.getName(Unknown Source)
+	at vn.elca.training.entity.Group$HibernateProxy$m4J1e.getName(Unknown Source)
 	at vn.elca.training.util.ProjectMapper.toDTO(ProjectMapper.java:42)
 	at vn.elca.training.service.impl.ProjectServiceImpl.findById(ProjectServiceImpl.java:68)
 	at vn.elca.training.web.ProjectController.findById(ProjectController.java:35)
@@ -492,7 +492,7 @@ Các bài tập được thực hiện theo lộ trình đào tạo (`HIBERNATE-
   ```
 * **Hiện tượng lỗi**: Khi thực thi test case, hệ thống văng ngoại lệ:
   ```text
-  org.hibernate.LazyInitializationException: failed to lazily initialize a collection of role: vn.elca.training.model.entity.Project.tasks, could not initialize proxy - no Session
+  org.hibernate.LazyInitializationException: failed to lazily initialize a collection of role: vn.elca.training.entity.Project.tasks, could not initialize proxy - no Session
   ```
 
 ---

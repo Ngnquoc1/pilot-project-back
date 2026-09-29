@@ -1,6 +1,6 @@
 package vn.elca.training.service;
 
-import vn.elca.training.model.dto.EmployeeDto;
+import vn.elca.training.dto.EmployeeDto;
 
 import java.util.List;
 
